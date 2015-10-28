@@ -4,7 +4,7 @@ import networkx as nx
 import igraph as ig
 import math as math
 import os
-
+import multiplex
 	
 def d(pos1,pos2):
 	LAT_DIST = 110766.95237186992 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
@@ -281,3 +281,11 @@ def igraph_2_nx(ig_graph):
 		nx_graph.add_edge(e.source, e.target, attr)
 
 	return nx_graph
+
+def multiplex_from_txt(**kwargs):
+	G = graph_from_txt(**kwargs)
+
+	multi = multiplex.multiplex()
+	multi.add_graph(G)
+
+	return multi

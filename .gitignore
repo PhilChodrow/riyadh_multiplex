@@ -2,3 +2,8 @@
 *.aux
 *.synctex.gz
 *.fdb_latexmk
+*DS_Store
+*.sublime-project
+*.sublime-workspace
+*multiplex_OLD.py
+*.pyc
