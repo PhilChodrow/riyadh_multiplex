@@ -6,6 +6,9 @@ from sys import stdout
 import utility
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import scipy.interpolate
 
 class multiplex:
 	
@@ -30,6 +33,17 @@ class multiplex:
 				nx.set_node_attributes(layer_dict[layer], 'layer', layer)
 				nx.set_edge_attributes(layer_dict[layer], 'layer', layer)
 				self.G = nx.disjoint_union(self.G, layer_dict[layer])
+
+				nx.convert_node_labels_to_integers(self.G)
+				new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) for n in self.G.node} 
+				nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
+
+	def weight_layers(self, weight, epsilon):
+		'''
+		All layers in the multiplex must have nonzero cost for betweenness calculations. 
+		'''
+		d = {e : self.G.edge[e[0]][e[1]][weight] + epsilon for e in self.G.edges_iter()}
+		nx.set_edge_attributes(self.G, weight, d)
 
 	def add_graph(self, H):
 		self.G = nx.disjoint_union(self.G, H)
@@ -65,8 +79,8 @@ class multiplex:
 		transfer_layer_name = layer1 + '--' + layer2
 		self.layers.append(transfer_layer_name)
 
-		layer1_copy = self.layer_as_subgraph(layer1)	
-		layer2_copy = self.layer_as_subgraph(layer2)
+		layer1_copy = self.layers_as_subgraph([layer1])	
+		layer2_copy = self.layers_as_subgraph([layer2])
 
 		for n in layer1_copy.node:
 			nearest, nearest_dist = utility.find_nearest(n, layer1_copy, layer2_copy)
@@ -85,11 +99,11 @@ class multiplex:
 
 			print 'Added ' + bidirectional + 'transfer between ' + str(n) + ' in ' + layer1 + ' and ' + str(nearest) + ' in ' + layer2 + ' of length ' + str(round(nearest_dist, 2)) + 'km.'
 
-	def layer_as_subgraph(self, layer):
+	def layers_as_subgraph(self, layers):
 		'''
 		docs of course! 
 		'''
-		return self.G.subgraph([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer])
+		return self.G.subgraph([n for n,attrdict in self.G.node.items() if attrdict['layer'] in layers])
 
 	def sub_multiplex(self, sublayers):
 		'''
@@ -146,6 +160,72 @@ class multiplex:
 		new_layers = set([attrdict['layer'] for n, attrdict in self.G.node.items()])
 		new_layers.update(set([d['layer'] for u,v,d in self.G.edges(data=True)]))
 		self.layers = list(new_layers)
+
+	def igraph_betweenness_centrality(self, layers = None, weight = None, attrname = 'bc'):
+		'''
+			thru_layers -- the layers on which to calculate betweenness. 
+			source_layers -- the layers to use as sources in betweenness calculation.
+			target_layers -- the layers to use as targets in the betweenness calculation.  
+
+		'''
+
+		g = utility.nx_2_igraph(self.layers_as_subgraph(layers))
+		
+		print g.es[weight]
+
+		# bc = g.betweenness(directed = True,
+		#                   cutoff = 300,
+		#                   weights = weight)
+
+		
+		d = dict(zip(g.vs['name'], bc))
+		d = {int(key):d[key] for key in d.keys()}
+
+		# print d
+		nx.set_node_attributes(self.G, attrname, d)
+
+	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
+		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.G.edges_iter()}
+		nx.set_edge_attributes(self.G, str(beta) + 'x' + attribute, d)
+
+	def streets_betweenness_plot(self, draw_metro = True, file_name = None, attrname = 'bc', norm = 1):
+		'''
+		Draw a simple betweenness plot, nothing too fancy. 
+		'''
+		streets = self.layers_as_subgraph(['streets'])
+		
+		streets.position = {n : (streets.node[n]['pos'][1], streets.node[n]['pos'][0]) for n in streets}
+		N = len(streets.node)
+		streets.size = [streets.node[n][attrname] for n in streets.node]
+		streets.size = [n / norm for n in streets.size]
+		
+		fig = plt.figure(figsize = (15,15), dpi = 500)
+		ax = fig.add_subplot(111)		
+		nx.draw(streets,streets.position,
+		        edge_color = 'grey',
+		        edge_size = .01,
+		        node_color = 'blue',
+		        node_size=streets.size,
+		        alpha = .1,
+		        with_labels=False,
+		        arrows = False,
+		        cmap=plt.cm.Blues)
+
+		if draw_metro:
+			metro = self.layers_as_subgraph(['metro'])
+			metro.position = {n:(metro.node[n]['pos'][1], metro.node[n]['pos'][0])for n in metro}
+			nx.draw(metro, metro.position,
+			        node_size = 2,
+			        edge_size = 400,
+			        arrows = False,
+			        alpha = 1,
+			        edge_color = 'red')
+
+		plt.savefig(file_name)
+
+
+
+
 
 
 
