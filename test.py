@@ -6,9 +6,6 @@ import utility
 # print 'Reading metro network.'
 # metro = utility.read_metro(directory = 'data/metro', file_prefix = 'metro') # networkx graph
 
-
-
-
 # print 'Reading street network'
 # streets = utility.read_streets(directory = 'data/street', file_prefix = 'street') # networkx graph
 
@@ -53,23 +50,29 @@ multi = utility.multiplex_from_txt(nodes_file_name = 'data/multiplex/multi_nodes
                            eidfrom = 'source',
                            eidto = 'target')
 
+
 multi.summary(print_summary = True)
 
 
 N = len(multi.as_graph().node)
 norm = (N-1) * (N-2) / 1000
 
-print norm
+# print norm
 
-for beta in [.1, 1]:
+for beta in [.1, 2]:
 	multi.weight_layers(weight = 'dist_km', epsilon = 0.000001)
 	multi.scale_edge_attribute(layer = 'metro', attribute = 'dist_km', beta = beta)
 
 	weight_name = str(beta) + 'x' + 'dist_km'
 	print weight_name
-	 
-	multi.igraph_betweenness_centrality(layers = ['streets', 'metro'], weight = weight_name, attrname = str(beta) + 'bc')
-# 	multi.streets_betweenness_plot(draw_metro = True, file_name = str(beta) + 'x' + 'betweenness.png', attrname = str(beta) + 'bc', norm = norm)
+
+
+multi.igraph_betweenness_centrality(layers = ['streets', 'metro'], weight = '0.1xdist_km', attrname = str(.1) + 'bc')
+ 
+multi.igraph_betweenness_centrality(layers = ['streets', 'metro'], weight = '2xdist_km', attrname = str(2) + 'bc')
+
+
+ # multi.streets_betweenness_plot(draw_metro = True, file_name = str(beta) + 'x' + 'betweenness.png', attrname = str(beta) + 'bc', norm = norm)
 
 multi.to_txt('data/multiplex', 'multi2')
 

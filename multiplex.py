@@ -27,16 +27,14 @@ class multiplex:
 		for layer in layer_dict:
 			if layer in self.layers: 
 				print "ERROR: The layer" + layer + "is already defined in the multiplex, did not overwrite"
-				break
+			
 			else:
 				self.layers.append(layer)
 				nx.set_node_attributes(layer_dict[layer], 'layer', layer)
 				nx.set_edge_attributes(layer_dict[layer], 'layer', layer)
 				self.G = nx.disjoint_union(self.G, layer_dict[layer])
-
-				nx.convert_node_labels_to_integers(self.G)
-				new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) for n in self.G.node} 
-				nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
+				self.label_nodes()
+				
 
 	def weight_layers(self, weight, epsilon):
 		'''
@@ -45,9 +43,18 @@ class multiplex:
 		d = {e : self.G.edge[e[0]][e[1]][weight] + epsilon for e in self.G.edges_iter()}
 		nx.set_edge_attributes(self.G, weight, d)
 
+	def label_nodes(self):
+		'''
+		Relabel the nodes in the format layer_int
+		'''
+		nx.convert_node_labels_to_integers(self.G)
+		new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) for n in self.G.node} 
+		nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
+
 	def add_graph(self, H):
 		self.G = nx.disjoint_union(self.G, H)
 		self.update_layers()
+		self.label_nodes()
 
 	def get_layers(self):
 		return self.layers
@@ -168,21 +175,23 @@ class multiplex:
 			target_layers -- the layers to use as targets in the betweenness calculation.  
 
 		'''
+		print 'current bug, working on it'
+		print 'Computing betweenness centrality -- this could take a while.' 
 
 		g = utility.nx_2_igraph(self.layers_as_subgraph(layers))
 		
-		print g.es[weight]
+		print max(g.es[weight])
 
-		# bc = g.betweenness(directed = True,
-		#                   cutoff = 300,
-		#                   weights = weight)
+		bc = g.betweenness(directed = True,
+		                  cutoff = 300,
+		                  weights = weight)
 
-		
 		d = dict(zip(g.vs['name'], bc))
-		d = {int(key):d[key] for key in d.keys()}
+		d = {key:d[key] for key in d.keys()}
 
-		# print d
+		print d
 		nx.set_node_attributes(self.G, attrname, d)
+
 
 	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
 		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.G.edges_iter()}
