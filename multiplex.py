@@ -9,6 +9,9 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import scipy.interpolate
+import numpy as np
+import matplotlib.cm as cm
+
 
 class multiplex:
 	
@@ -16,7 +19,6 @@ class multiplex:
 		self.layers = []
 		# self.layers = []
 		self.G = nx.DiGraph()
-		
 
 	def add_layers(self, layer_dict):
 		'''
@@ -231,10 +233,80 @@ class multiplex:
 
 		plt.savefig(file_name)
 
+	def betweenness_plot_interpolated(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
 
+	    def distance_matrix(x0, y0, x1, y1):
+	        obs = np.vstack((x0, y0)).T
+	        interp = np.vstack((x1, y1)).T
 
+	        # Make a distance matrix between pairwise observations
+	        # Note: from <http://stackoverflow.com/questions/1871536>
+	        # (Yay for ufuncs!)
+	        d0 = np.subtract.outer(obs[:,0], interp[:,0])
+	        d1 = np.subtract.outer(obs[:,1], interp[:,1])
 
+	        return np.hypot(d0, d1)
 
+	    def simple_idw(x, y, z, xi, yi):
+	        dist = distance_matrix(x,y, xi,yi)
 
+	        # In IDW, weights are 1 / distance
+	        weights = 1.0 / dist**.7
+
+	        # Make weights sum to one
+	        weights /= weights.sum(axis=0)
+
+	        # Multiply the weights for each interpolated point by all observed Z-values
+	        zi = np.dot(weights.T, z)
+	        return zi
+
+	    def plot(x,y,z,grid):
+	        plt.figure(figsize = (15,15), dpi = 500)
+	        plt.imshow(grid, extent=(x.min(), x.max(), y.max(), y.min()), cmap=cm.Blues, vmin = vmin, vmax = vmax)
+	        plt.hold(True)
+	        plt.colorbar()
+	        
+
+	    N = self.layers_as_subgraph([layer1])
+	    M = self.layers_as_subgraph([layer2])
+
+	    x = np.array([N.node[n]['pos'][1] for n in N.node])
+	    y = np.array([- N.node[n]['pos'][0] for n in N.node])
+	    z = np.array([N.node[n][measure] for n in N.node])
+
+	    mx, my = 100, 100
+	    xi = np.linspace(x.min(), x.max(), mx)
+	    yi = np.linspace(y.min(), y.max(), my)
+
+	    xi, yi = np.meshgrid(xi, yi)
+	    xi, yi = xi.flatten(), yi.flatten()
+
+	    # Calculate IDW
+	    grid1 = simple_idw(x,y,z,xi,yi)
+	    grid1 = grid1.reshape((my, mx))
+
+	    plot(x,y,z,grid1)
+	    plt.title(title)
+	    N.position = {n : (N.node[n]['pos'][1], - N.node[n]['pos'][0]) for n in N}
+
+	    nx.draw(N,N.position,
+	            edge_color = 'grey',
+	            edge_size = .01,
+	            node_color = 'black',
+	            node_size = 0,
+	            alpha = .2,
+	            with_labels=False,
+	            arrows = False)
+
+	    M.position = {m : (M.node[m]['pos'][1], - M.node[m]['pos'][0]) for m in M}
+	    nx.draw(M, 
+	            M.position,
+	            edge_color = '#5A0000',
+	            edge_size = 60,
+	            node_size = 0,
+	            arrows = False,
+	            with_labels = False)
+
+	    plt.savefig(file_name)
 
 
