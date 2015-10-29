@@ -36,11 +36,11 @@ class multiplex:
 				self.label_nodes()
 				
 
-	def weight_layers(self, weight, epsilon):
+	def add_epsilon(self, weight, epsilon):
 		'''
 		All layers in the multiplex must have nonzero cost for betweenness calculations. 
 		'''
-		d = {e : self.G.edge[e[0]][e[1]][weight] + epsilon for e in self.G.edges_iter()}
+		d = {e : float(self.G.edge[e[0]][e[1]][weight] or 0) + epsilon for e in self.G.edges_iter()}
 		nx.set_edge_attributes(self.G, weight, d)
 
 	def label_nodes(self):
@@ -93,6 +93,7 @@ class multiplex:
 			nearest, nearest_dist = utility.find_nearest(n, layer1_copy, layer2_copy)
 			self.G.add_edge(n, nearest, 
 							layer = transfer_layer_name,
+							weight = 0,
 							dist_km = nearest_dist, 
 							cost_time_m = nearest_dist / transfer_speed + base_cost)
 			
@@ -100,6 +101,7 @@ class multiplex:
 			if both: 
 				self.G.add_edge(nearest, n, 
 								layer = transfer_layer_name,
+								weight = 0,
 								dist_km = nearest_dist, 
 								cost_time_m = nearest_dist / transfer_speed + base_cost) # assumes bidirectional
 				bidirectional = "bidirectional "
@@ -175,12 +177,9 @@ class multiplex:
 			target_layers -- the layers to use as targets in the betweenness calculation.  
 
 		'''
-		print 'current bug, working on it'
 		print 'Computing betweenness centrality -- this could take a while.' 
 
 		g = utility.nx_2_igraph(self.layers_as_subgraph(layers))
-		
-		print max(g.es[weight])
 
 		bc = g.betweenness(directed = True,
 		                  cutoff = 300,
@@ -189,13 +188,13 @@ class multiplex:
 		d = dict(zip(g.vs['name'], bc))
 		d = {key:d[key] for key in d.keys()}
 
-		print d
 		nx.set_node_attributes(self.G, attrname, d)
 
 
 	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
-		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.G.edges_iter()}
-		nx.set_edge_attributes(self.G, str(beta) + 'x' + attribute, d)
+		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.layers_as_subgraph([layer]).edges_iter()}
+		nx.set_edge_attributes(self.G, attribute, d)
+
 
 	def streets_betweenness_plot(self, draw_metro = True, file_name = None, attrname = 'bc', norm = 1):
 		'''

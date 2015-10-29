@@ -17,6 +17,8 @@ def graph_from_txt(nodes_file_name, edges_file_name, sep, nid, eidfrom, eidto):
 	edges = pd.read_table(edges_file_name, sep = sep, index_col=False)
 	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
 
+	print edges.head()
+	print nodes.head()
 	N = nx.DiGraph()
 
 	for n in range(len(nodes)):
@@ -176,6 +178,7 @@ def read_metro(directory, file_prefix):
 	nx.set_edge_attributes(metro, 'cost_time_m', time_m)
 	nx.set_edge_attributes(metro, 'weight', time_m)
 
+	print str(len(metro.nodes())) + ' nodes added to metro network.'
 	print str(len(metro.edges())) + ' edges added to metro network.'
 	nx.set_node_attributes(metro, 'layer', 'metro')
 	nx.set_edge_attributes(metro, 'layer', 'metro')
@@ -185,15 +188,18 @@ def read_metro(directory, file_prefix):
 	return metro
 
 def read_streets(directory, file_prefix):
+
 	streets = graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
 	                       edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
 	                       sep = ' ', 
-	                       nid = 'nid', 
+	                       nid = 'id', 
 	                       eidfrom = 'source', 
 	                       eidto = 'target')
+	print 'constructed graph'
 
-	nx.set_edge_attributes(streets, 'weight', nx.get_edge_attributes(streets, 'cost_time_m'))
-	pos = {n : (streets.node[n]['lat'], streets.node[n]['lon']) for n in streets}	
+	nx.set_edge_attributes(streets, 'weight', nx.get_edge_attributes(streets, 'cost_time'))
+	nx.set_edge_attributes(streets, 'dist_km', nx.get_edge_attributes(streets, 'len_km'))
+	pos = {n : (streets.node[n]['st_y'], streets.node[n]['st_x']) for n in streets}	
 	nx.set_node_attributes(streets, 'pos', pos)
 
 	print str(len(streets.nodes())) + ' nodes added to street network'
@@ -251,7 +257,7 @@ def remove_flow_through_2(N, add):
 	return N
 
 def nx_2_igraph(graph):
-	print 'Converting to igraph object'
+	
 	ig_graph = ig.Graph()
 	ig_graph = ig_graph.as_directed(mutual = False)
 
