@@ -247,24 +247,28 @@ class multiplex:
 
 	        return np.hypot(d0, d1)
 
-	    def simple_idw(x, y, z, xi, yi):
+	    def simple_idw(x, y, z, xi, yi, threshhold):
 	        dist = distance_matrix(x,y, xi,yi)
 
 	        # In IDW, weights are 1 / distance
-	        weights = 1.0 / dist**.7
+	        weights = 1.0 / dist**.5
 
 	        # Make weights sum to one
 	        weights /= weights.sum(axis=0)
 
 	        # Multiply the weights for each interpolated point by all observed Z-values
 	        zi = np.dot(weights.T, z)
+	        gap = zi[dist.min(axis = 0) > threshhold].max()
+	        zi[dist.min(axis = 0) > threshhold] = 0
+	        zi = zi - gap
+	        zi[zi < 0] = 0
 	        return zi
 
 	    def plot(x,y,z,grid):
 	        plt.figure(figsize = (15,15), dpi = 500)
 	        plt.imshow(grid, extent=(x.min(), x.max(), y.max(), y.min()), cmap=cm.Blues, vmin = vmin, vmax = vmax)
 	        plt.hold(True)
-	        plt.colorbar()
+	        # plt.colorbar()
 	        
 
 	    N = self.layers_as_subgraph([layer1])
@@ -282,7 +286,7 @@ class multiplex:
 	    xi, yi = xi.flatten(), yi.flatten()
 
 	    # Calculate IDW
-	    grid1 = simple_idw(x,y,z,xi,yi)
+	    grid1 = simple_idw(x,y,z,xi,yi, threshhold = .2)
 	    grid1 = grid1.reshape((my, mx))
 
 	    plot(x,y,z,grid1)

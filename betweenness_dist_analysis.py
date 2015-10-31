@@ -26,19 +26,20 @@ multi.add_epsilon(weight = 'weight', epsilon = .000001)
 # max_bc = np.max([N.node[n]['bc'] for n in N.node])
 # print max_bc
 
-vmax = 1.6*1e11
-vmin = .1*1e11
+# vmax = 1.6*1e11
+# vmin = .1*1e11
 
-
-betas = [.01, .1, .3, .5, .7, .9, 1]
-betas = [.3]
+betas = [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1]
 
 for beta in betas:
 	multi.scale_edge_attribute(layer = 'metro', attribute = 'weight', beta = beta)
 	multi.igraph_betweenness_centrality(layers = multi.get_layers(), weight = 'weight', attrname = str(beta) + 'bc')
+	streets = multi.layers_as_subgraph('streets')
+	max_bc = max([streets.node[n][str(beta) + 'bc'] for n in streets.node])
+	max_bc = '%.1e' % max_bc
 	multi.betweenness_plot_interpolated(layer1 = 'streets', 
 	                                    layer2 = 'metro', 
-	                                    title = r"Riyadh Streets: Betweenness (distance weighting, $\beta =" + str(beta) + "$)", 
+	                                    title = 'Riyadh Streets: Betweenness \n' +  r'$\beta =' + str(beta) + '$' + '\n max betweenness = ' + max_bc, 
 	                                    measure = str(beta) + 'bc', 
 	                                    file_name = 'dist_betweenness_beta' + str(beta) + '.png',
 	                                    vmin = None,
