@@ -12,27 +12,25 @@ def d(pos1,pos2):
 	LON_DIST = 101274.42720366278 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
 	return math.sqrt((LAT_DIST*(pos1[0]- pos2[0]))**2 + (LON_DIST*(pos1[1] - pos2[1]))**2)
 
-def graph_from_txt(nodes_file_name, edges_file_name, sep, nid, eidfrom, eidto):
+def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', nid = None, eidfrom = None, eidto = None):
 	'''
 		Docs
 	'''
-
-	edges = pd.read_table(edges_file_name, sep = sep, index_col=False)
 	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
-
 	N = nx.DiGraph()
-
 	for n in range(len(nodes)):
 		attr = {nid: nodes[nid][n]}
 		attr2 = {col: nodes[col][n] for col in list(nodes)}
 		attr.update(attr2)
 		N.add_node(nodes[nid][n], attr)
 
-	for e in range(len(edges)):
-		attr = {eidfrom : edges[eidfrom][e], eidto : edges[eidto][e]}
-		attr2 = {col: edges[col][e] for col in list(edges)}
-		attr.update(attr2)
-		N.add_edge(edges[eidfrom][e], edges[eidto][e], attr)
+	if edges_file_name is not None: 
+		edges = pd.read_table(edges_file_name, sep = sep, index_col=False)
+		for e in range(len(edges)):
+			attr = {eidfrom : edges[eidfrom][e], eidto : edges[eidto][e]}
+			attr2 = {col: edges[col][e] for col in list(edges)}
+			attr.update(attr2)
+			N.add_edge(edges[eidfrom][e], edges[eidto][e], attr)
 
 	return N
 
