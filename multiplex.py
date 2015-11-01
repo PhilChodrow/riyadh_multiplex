@@ -373,5 +373,27 @@ class multiplex:
 		return np.dot(attr_array.T, weight_array) / (weight_array**2).sum()
 
 
+	def local_intermodality(self, layer = None, thru_layer = None, weight = None):
+
+		g = utility.nx_2_igraph(self.G)
+		nodes = g.vs.select(layer=layer)
+
+		def intermodality(v, g, nodes = nodes, weight = weight):
+			paths = g.get_shortest_paths(v, nodes, weights = weight)
+			total = len(nodes)
+			intermodal = 0
+			for p in paths: 
+				if thru_layer in [g.vs[u]['layer'] for u in p]:
+					intermodal += 1
+			print v['name']
+			return intermodal * 1.0 / total
+
+		d = {v['name'] : intermodality(v = v, g = g, nodes = nodes, weight = weight) for v in nodes}
+		
+		nx.set_node_attributes(self.G, 'intermodality', d)
+		
+
+
+
 
 
