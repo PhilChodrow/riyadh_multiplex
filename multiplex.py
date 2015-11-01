@@ -11,7 +11,7 @@ import matplotlib as mpl
 import scipy.interpolate
 import numpy as np
 import matplotlib.cm as cm
-
+import random
 
 class multiplex:
 	
@@ -341,5 +341,37 @@ class multiplex:
 		    arrows = False,
 		    with_labels = False)
 		plt.savefig(file_name)
+
+	def random_nodes_in(self, layers = [], n_nodes = 1):
+		
+		H = self.layers_as_subgraph(layers = layers)
+		nodes = [n for n in H.node]
+		nodes = random.sample(nodes, n_nodes)
+		
+		for n in nodes:
+			assert self.G.node[n]['layer'] in layers  
+		
+		return nodes
+
+	def layers_of(self, nbunch = []):
+		layers_found = set([self.G.node[n]['layer'] for n in nbunch])
+		
+		return layers_found
+
+	def shortest_path(self, source, target, weight = 'weight'):
+		return nx.shortest_path(self.G, source = source, target = target, weight = weight)
+
+	def mean_edge_attr_per(self, layers = [], attr = 'weight', weight_attr = None):
+		H = self.layers_as_subgraph(layers = layers)
+		attr_array = np.array([H.edge[e[0]][e[1]][attr] for e in H.edges_iter()])
+
+		if weight_attr is not None: 
+			weight_array = np.array([H.edge[e[0]][e[1]][weight_attr] for e in H.edges_iter()])
+		else: 
+			weight_array = np.array([1 for e in H.edges_iter()])
+
+		return np.dot(attr_array.T, weight_array) / (weight_array**2).sum()
+
+
 
 
