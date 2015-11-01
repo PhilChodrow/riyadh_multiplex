@@ -198,7 +198,8 @@ def read_streets(directory, file_prefix):
 	                       eidto = 'target')
 	print 'constructed graph'
 
-	nx.set_edge_attributes(streets, 'weight', nx.get_edge_attributes(streets, 'cost_time'))
+
+	nx.set_edge_attributes(streets, 'weight', nx.get_edge_attributes(streets, 'cost_time_m'))
 	nx.set_edge_attributes(streets, 'dist_km', nx.get_edge_attributes(streets, 'len_km'))
 	pos = {n : (streets.node[n]['st_y'], streets.node[n]['st_x']) for n in streets}	
 	nx.set_node_attributes(streets, 'pos', pos)

@@ -1,5 +1,5 @@
 
-all: 2.\ multiplex/multiplex_nodes.txt  4.\ figs/betweenness/dist_km/beta1.png methods/methods.pdf
+all: 2.\ multiplex/multiplex_nodes.txt  4.\ figs/betweenness/dist_km/beta1.png 4.\ figs/betweenness/cost_time_free_flow/beta1.png methods/methods.pdf
 
 clean: 
 	rm -rf 4.\ figs/betweenness
@@ -14,4 +14,8 @@ methods/methods.pdf: methods/methods.tex
 
 4.\ figs/betweenness/dist_km/beta1.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt
 	python betweenness_dist.py
+
+4.\ figs/betweenness/cost_time_free_flow/beta1.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt
+	python betweenness_time_free_flow.py
+
 

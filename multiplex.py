@@ -313,4 +313,33 @@ class multiplex:
 
 	    plt.savefig(file_name)
 
+	def betweenness_plot_scatter(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
+
+		plt.figure(figsize = (15,15), dpi = 500)
+		N = self.layers_as_subgraph([layer1])
+		M = self.layers_as_subgraph([layer2])
+
+		N.position = {n : (N.node[n]['pos'][1], N.node[n]['pos'][0]) for n in N}
+		N.size = [N.node[n][measure] / 20000 for n in N]
+
+		nx.draw(N,N.position,
+		    edge_color = 'grey',
+		    edge_size = .01,
+		    node_size = N.size,
+		    node_color = '#003399',
+		    linewidths = 0,
+		    alpha = .1,
+		    with_labels=False,
+		    arrows = False)
+
+		M.position = {m : (M.node[m]['pos'][1], M.node[m]['pos'][0]) for m in M}
+		nx.draw(M, 
+		    M.position,
+		    edge_color = '#5A0000',
+		    edge_size = 60,
+		    node_size = 0,
+		    arrows = False,
+		    with_labels = False)
+		plt.savefig(file_name)
+
 
