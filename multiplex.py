@@ -270,13 +270,13 @@ class multiplex:
 	        plt.hold(True)
 	        # plt.colorbar()
 	        
-
 	    N = self.layers_as_subgraph([layer1])
 	    M = self.layers_as_subgraph([layer2])
 
 	    x = np.array([N.node[n]['pos'][1] for n in N.node])
 	    y = np.array([- N.node[n]['pos'][0] for n in N.node])
-	    z = np.array([N.node[n][measure] for n in N.node])
+	    z = np.array([float(N.node[n][measure]) for n in N.node])
+	   
 
 	    mx, my = 100, 100
 	    xi = np.linspace(x.min(), x.max(), mx)
@@ -320,7 +320,7 @@ class multiplex:
 		M = self.layers_as_subgraph([layer2])
 
 		N.position = {n : (N.node[n]['pos'][1], N.node[n]['pos'][0]) for n in N}
-		N.size = [N.node[n][measure] / 20000 for n in N]
+		N.size = [float(N.node[n][measure]) / 20000 for n in N]
 
 		nx.draw(N,N.position,
 		    edge_color = 'grey',
@@ -385,7 +385,6 @@ class multiplex:
 			for p in paths: 
 				if thru_layer in [g.vs[u]['layer'] for u in p]:
 					intermodal += 1
-			print v['name']
 			return intermodal * 1.0 / total
 
 		d = {v['name'] : intermodality(v = v, g = g, nodes = nodes, weight = weight) for v in nodes}
