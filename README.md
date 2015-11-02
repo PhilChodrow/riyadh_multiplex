@@ -10,6 +10,8 @@ This repo contains code for the Riyadh Multiplex Metro project's analytical pipe
 4. `make_multiplex.py`: a Python script for constructing a `multiplex` objecting using data in the `1. data` directory. The script saves the nodes and edges of the resulting object in the `2. multiplex` directory.
 5. `betweenness_dist.py`: a Python script that reads in a multiplex object from the `2. multiplex` directory and prints out a series of betweenness plots weighted by distance. Comparable to Figure 6 in Strano et al.'s [recent paper](http://arxiv.org/abs/1508.07265)
 6. `betweenness_time_free_flow.py`: a Python script that reads in a multiplex object from the `2. multiplex` directory and prints out a series of betweenness plots weighted by estimated travel time under free flow. 
+7. `intermodality_analysis.py`: a Python script that reads in a multiplex object from the `2. multiplex` directory and creates a plot of intermodality -- the ratio of shortest paths that pass through the metro -- as a function of beta. 
+8. `intermodality_local.py`: a Python script that reads in a multiplex object from the `2. multiplex` directory and creates a plot of the spatial distribution of intermodality for a fixed value of beta. 
 
 ## Data
 
