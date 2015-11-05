@@ -21,5 +21,12 @@ The `data` directory includes the following data sets
 2. `metro`, comprising `metro_nodes.txt` and `metro_edges.txt`. 
 3. `taz`, comprising `taz_connectors.txt`.  
 
+## Todo
+
+1. Gini coefficient of betweenness centrality
+2. Spatial outreach: spatial distribution, quantile distribution, gini coefficient for varying beta
+3. Gini coefficient of spatial outreach
+4. Overall betweenness distribution
+
 
 
