@@ -69,8 +69,8 @@ class multiplex:
 		if layer not in self.layers:
 			print "Sorry, " + layer + ' is not current in the multiplex.'
 		else:
-			self.layers.pop(layer)
-			G.remove_nodes_from([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer])
+			self.layers.remove(layer)
+			self.G.remove_nodes_from([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer])
 
 	def check_layer(self, layer_name):
 		'''
@@ -186,7 +186,7 @@ class multiplex:
 		bc = g.betweenness(directed = True,
 		                  cutoff = 300,
 		                  weights = weight)
-
+		print 'betweenness calculated'
 		d = dict(zip(g.vs['name'], bc))
 		d = {key:d[key] for key in d.keys()}
 
@@ -233,7 +233,7 @@ class multiplex:
 
 		plt.savefig(file_name)
 
-	def betweenness_plot_interpolated(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
+	def betweenness_plot_interpolated(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None, show = False):
 
 	    def distance_matrix(x0, y0, x1, y1):
 	        obs = np.vstack((x0, y0)).T
@@ -311,6 +311,9 @@ class multiplex:
 	            arrows = False,
 	            with_labels = False)
 
+	    if show == True:
+	    	plt.show()
+	    
 	    plt.savefig(file_name)
 
 	def betweenness_plot_scatter(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
