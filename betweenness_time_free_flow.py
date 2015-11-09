@@ -18,13 +18,14 @@ def prep(directory):
 	                                   eidfrom = 'source',
 	                                   eidto = 'target')
 
-	
 	if not os.path.exists(directory):
 		os.makedirs(directory)
 
 	nx.set_edge_attributes(multi.G, 'weight', nx.get_edge_attributes(multi.G, 'cost_time_m'))
-	# multi.add_epsilon(weight = 'weight', epsilon = .000001)
-
+	
+	multi.add_epsilon(weight = 'weight', epsilon = .000001)
+	multi.remove_layer('taz')
+	
 	return multi
 
 def analysis(multi, directory):
@@ -33,7 +34,9 @@ def analysis(multi, directory):
 
 	for beta in betas:
 		multi.scale_edge_attribute(layer = 'metro', attribute = 'weight', beta = beta)
+
 		multi.igraph_betweenness_centrality(layers = multi.get_layers(), weight = 'weight', attrname = str(beta) + 'bc')
+		print 'done'
 		streets = multi.layers_as_subgraph('streets')
 		max_bc = max([streets.node[n][str(beta) + 'bc'] for n in streets.node])
 		max_bc = '%.1e' % max_bc
