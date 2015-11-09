@@ -25,8 +25,6 @@ def main():
 	print 'Reading street network'
 	streets = utility.read_streets(directory = street_dir, file_prefix = street_prefix) # networkx graph
 
-
-
 	layer_dict = {'metro' : metro, 'streets' : streets, 'taz' : taz} # need a dict to add to multiplex.
 
 	multi = mx.multiplex() # initialize empty multiplex

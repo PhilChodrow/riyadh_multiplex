@@ -233,42 +233,7 @@ class multiplex:
 
 		plt.savefig(file_name)
 
-	def betweenness_plot_interpolated(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None, show = False):
-
-	    def distance_matrix(x0, y0, x1, y1):
-	        obs = np.vstack((x0, y0)).T
-	        interp = np.vstack((x1, y1)).T
-
-	        # Make a distance matrix between pairwise observations
-	        # Note: from <http://stackoverflow.com/questions/1871536>
-	        # (Yay for ufuncs!)
-	        d0 = np.subtract.outer(obs[:,0], interp[:,0])
-	        d1 = np.subtract.outer(obs[:,1], interp[:,1])
-
-	        return np.hypot(d0, d1)
-
-	    def simple_idw(x, y, z, xi, yi, threshhold):
-	        dist = distance_matrix(x,y, xi,yi)
-
-	        # In IDW, weights are 1 / distance
-	        weights = 1.0 / dist**.5
-
-	        # Make weights sum to one
-	        weights /= weights.sum(axis=0)
-
-	        # Multiply the weights for each interpolated point by all observed Z-values
-	        zi = np.dot(weights.T, z)
-	        gap = zi[dist.min(axis = 0) > threshhold].max()
-	        zi[dist.min(axis = 0) > threshhold] = 0
-	        zi = zi - gap
-	        zi[zi < 0] = 0
-	        return zi
-
-	    def plot(x,y,z,grid):
-	        plt.figure(figsize = (15,15), dpi = 500)
-	        plt.imshow(grid, extent=(x.min(), x.max(), y.max(), y.min()), cmap=cm.Blues, vmin = vmin, vmax = vmax)
-	        plt.hold(True)
-	        # plt.colorbar()
+	def spatial_plot_interpolated(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None, show = False):
 	        
 	    N = self.layers_as_subgraph([layer1])
 	    M = self.layers_as_subgraph([layer2])
@@ -286,10 +251,10 @@ class multiplex:
 	    xi, yi = xi.flatten(), yi.flatten()
 
 	    # Calculate IDW
-	    grid1 = simple_idw(x,y,z,xi,yi, threshhold = .2)
+	    grid1 = utility.simple_idw(x,y,z,xi,yi, threshhold = .2)
 	    grid1 = grid1.reshape((my, mx))
 
-	    plot(x,y,z,grid1)
+	    utility.plot(x,y,z,grid1)
 	    plt.title(title)
 	    N.position = {n : (N.node[n]['pos'][1], - N.node[n]['pos'][0]) for n in N}
 
@@ -314,11 +279,11 @@ class multiplex:
 	    if show == True:
 	    	plt.show()
 	    
-	    plt.savefig(file_name)
+	   
 
 	def betweenness_plot_scatter(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
 
-		plt.figure(figsize = (15,15), dpi = 500)
+		
 		N = self.layers_as_subgraph([layer1])
 		M = self.layers_as_subgraph([layer2])
 

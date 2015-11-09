@@ -1,11 +1,15 @@
+
 import numpy as np
 import pandas as pd
 import networkx as nx
-import igraph as ig
 import math as math
 import os
 import multiplex
 from ast import literal_eval
+import igraph as ig
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
 
 def d(pos1,pos2):
 	LAT_DIST = 110766.95237186992 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
@@ -299,3 +303,72 @@ def multiplex_from_txt(**kwargs):
 	multi.add_graph(G)
 
 	return multi
+
+def distance_matrix(x0, y0, x1, y1):
+    obs = np.vstack((x0, y0)).T
+    interp = np.vstack((x1, y1)).T
+
+    # Make a distance matrix between pairwise observations
+
+    d0 = np.subtract.outer(obs[:,0], interp[:,0])
+    d1 = np.subtract.outer(obs[:,1], interp[:,1])
+
+    return np.hypot(d0, d1)
+
+def simple_idw(x, y, z, xi, yi, threshhold):
+    dist = distance_matrix(x,y, xi,yi)
+
+    # In IDW, weights are 1 / distance
+    weights = 1.0 / dist**.5
+
+    # Make weights sum to one
+    weights /= weights.sum(axis=0)
+
+    # Multiply the weights for each interpolated point by all observed Z-values
+    zi = np.dot(weights.T, z)
+    gap = zi[dist.min(axis = 0) > threshhold].max()
+    zi[dist.min(axis = 0) > threshhold] = 0
+    zi = zi - gap
+    zi[zi < 0] = 0
+    return zi
+
+def plot(x,y,z,grid):
+    # plt.figure(figsize = (15,15), dpi = 500)
+    plt.imshow(grid, extent=(x.min(), x.max(), y.max(), y.min()), cmap=cm.Blues)
+    plt.hold(True)
+    # plt.colorbar()
+
+def idw_smoothed_plot(layer, measure):
+    N = multi.layers_as_subgraph([layer])
+
+    x = np.array([N.node[n]['pos'][1] for n in N.node])
+    y = np.array([- N.node[n]['pos'][0] for n in N.node])
+    z = np.array([float(N.node[n][measure]) for n in N.node])
+
+    mx, my = 100, 100
+    xi = np.linspace(x.min(), x.max(), mx)
+    yi = np.linspace(y.min(), y.max(), my)
+
+    xi, yi = np.meshgrid(xi, yi)
+    xi, yi = xi.flatten(), yi.flatten()
+
+    grid1 = simple_idw(x,y,z,xi,yi, threshhold = .2)
+    grid1 = grid1.reshape((my, mx))
+
+    plot(x,y,z,grid1)
+
+def read_multi():
+	multi = multiplex_from_txt(nodes_file_name = '2. multiplex/multiplex_nodes.txt',
+	                                   edges_file_name = '2. multiplex/multiplex_edges.txt',
+	                                   sep = '\t',
+	                                   nid = 'id',
+	                                   eidfrom = 'source',
+	                                   eidto = 'target')
+
+	return multi
+
+def check_directory(directory):
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+
+
