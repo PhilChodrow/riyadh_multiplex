@@ -1,5 +1,6 @@
 
-all: 2.\ multiplex/multiplex_nodes.txt  4.\ figs/betweenness/dist_km/beta1.png 4.\ figs/betweenness/cost_time_free_flow/beta1.png 4.\ figs/intermodality/global/intermodality_profile.png  4.\ figs/intermodality/global/intermodality_profile.png methods/methods.pdf
+all: 2.\ multiplex/multiplex_nodes.txt  4.\ figs/betweenness/dist_km/beta1.png 4.\ figs/betweenness/cost_time_m/beta1.png 
+	# 4.\ figs/intermodality/global/intermodality_profile.png  4.\ figs/intermodality/global/intermodality_profile.png methods/methods.pdf
 
 clean: 
 	rm -rf 4.\ figs/betweenness
@@ -15,7 +16,7 @@ methods/methods.pdf: methods/methods.tex
 4.\ figs/betweenness/dist_km/beta1.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt
 	python betweenness.py dist_km 
 
-4.\ figs/betweenness/cost_time_free_flow/beta1.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt
+4.\ figs/betweenness/cost_time_m/beta1.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt
 	python betweenness.py cost_time_m
 
 4.\ figs/intermodality/global/intermodality_profile.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt

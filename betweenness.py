@@ -52,7 +52,7 @@ def plot(multi, beta, measure, directory):
 	# a.set(xscale="log", yscale = "log")
 	sns.despine(left = True)
 
-	plt.title('Betweenness distribution (log/log scale)')
+	plt.title('Betweenness distribution')
 	plt.savefig(directory + '/beta' + str(beta) + '.png')
 
 def analysis(multi, directory):
