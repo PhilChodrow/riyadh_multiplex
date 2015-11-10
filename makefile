@@ -22,8 +22,13 @@ methods/methods.pdf: methods/methods.tex
 4.\ figs/intermodality/global/intermodality_profile.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt
 	python intermodality_analysis.py
 
+4.\ figs/shortest_paths/dist_km.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt 
+	python path_distributions.py dist_km cost_time_m
+
+
 # 4.\ figs/intermodality/global/intermodality_profile.png: 2.\ multiplex/multiplex_nodes.txt 2.\ multiplex/multiplex_edges.txt
 # 	python intermodality_local.py
+
 
 
 

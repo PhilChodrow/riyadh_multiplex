@@ -41,7 +41,7 @@ else:
 
 	with sns.axes_style("white"):
 		h = sns.JointGrid(x = measure1, y = measure2, data = d, xlim=(0, 40), ylim=(0, 40))
-		h = h.plot_joint(plt.hexbin, cmap = 'Purples')
+		h = h.plot_joint(plt.hexbin, cmap = 'Purples', gridsize = 300)
 		h = h.plot_marginals(sns.distplot, kde = True, color = ".5")
 		h.set_axis_labels(measure1, measure2)
 		sns.plt.savefig(directory + '/' + measure1 + '__' + measure2 + '_joint_density.png')
