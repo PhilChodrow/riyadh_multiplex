@@ -153,7 +153,7 @@ class multiplex:
 		Return a dict of the form {'layer_name' : (num_layer_nodes, num_layer_edges)}
 		'''
 		layers = {layer: (len([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer]), 
-		                  len([(u,v,d) for u,v,d in self.G.edges(data=True) if d['layer'] == layer])) for layer in self.layers} 
+						  len([(u,v,d) for u,v,d in self.G.edges(data=True) if d['layer'] == layer])) for layer in self.layers} 
 		if print_summary:
 			print "Layer \t N \t E "
 			for layer in layers:
@@ -184,8 +184,8 @@ class multiplex:
 		g = utility.nx_2_igraph(self.layers_as_subgraph(layers))
 
 		bc = g.betweenness(directed = True,
-		                  cutoff = 300,
-		                  weights = weight)
+						  cutoff = 300,
+						  weights = weight)
 		print 'betweenness calculated'
 		d = dict(zip(g.vs['name'], bc))
 		d = {key:d[key] for key in d.keys()}
@@ -212,73 +212,73 @@ class multiplex:
 		fig = plt.figure(figsize = (15,15), dpi = 500)
 		ax = fig.add_subplot(111)		
 		nx.draw(streets,streets.position,
-		        edge_color = 'grey',
-		        edge_size = .01,
-		        node_color = 'blue',
-		        node_size=streets.size,
-		        alpha = .1,
-		        with_labels=False,
-		        arrows = False,
-		        cmap=plt.cm.Blues)
+				edge_color = 'grey',
+				edge_size = .01,
+				node_color = 'blue',
+				node_size=streets.size,
+				alpha = .1,
+				with_labels=False,
+				arrows = False,
+				cmap=plt.cm.Blues)
 
 		if draw_metro:
 			metro = self.layers_as_subgraph(['metro'])
 			metro.position = {n:(metro.node[n]['pos'][1], metro.node[n]['pos'][0])for n in metro}
 			nx.draw(metro, metro.position,
-			        node_size = 2,
-			        edge_size = 400,
-			        arrows = False,
-			        alpha = 1,
-			        edge_color = 'red')
+					node_size = 2,
+					edge_size = 400,
+					arrows = False,
+					alpha = 1,
+					edge_color = 'red')
 
 		plt.savefig(file_name)
 
 	def spatial_plot_interpolated(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None, show = False):
-	        
-	    N = self.layers_as_subgraph([layer1])
-	    M = self.layers_as_subgraph([layer2])
+			
+		N = self.layers_as_subgraph([layer1])
+		M = self.layers_as_subgraph([layer2])
 
-	    x = np.array([N.node[n]['pos'][1] for n in N.node])
-	    y = np.array([- N.node[n]['pos'][0] for n in N.node])
-	    z = np.array([float(N.node[n][measure]) for n in N.node])
+		x = np.array([N.node[n]['pos'][1] for n in N.node])
+		y = np.array([- N.node[n]['pos'][0] for n in N.node])
+		z = np.array([float(N.node[n][measure]) for n in N.node])
 	   
 
-	    mx, my = 100, 100
-	    xi = np.linspace(x.min(), x.max(), mx)
-	    yi = np.linspace(y.min(), y.max(), my)
+		mx, my = 100, 100
+		xi = np.linspace(x.min(), x.max(), mx)
+		yi = np.linspace(y.min(), y.max(), my)
 
-	    xi, yi = np.meshgrid(xi, yi)
-	    xi, yi = xi.flatten(), yi.flatten()
+		xi, yi = np.meshgrid(xi, yi)
+		xi, yi = xi.flatten(), yi.flatten()
 
-	    # Calculate IDW
-	    grid1 = utility.simple_idw(x,y,z,xi,yi, threshhold = .2)
-	    grid1 = grid1.reshape((my, mx))
+		# Calculate IDW
+		grid1 = utility.simple_idw(x,y,z,xi,yi, threshhold = .2)
+		grid1 = grid1.reshape((my, mx))
 
-	    utility.plot(x,y,z,grid1)
-	    plt.title(title)
-	    N.position = {n : (N.node[n]['pos'][1], - N.node[n]['pos'][0]) for n in N}
+		utility.plot(x,y,z,grid1)
+		plt.title(title)
+		N.position = {n : (N.node[n]['pos'][1], - N.node[n]['pos'][0]) for n in N}
 
-	    nx.draw(N,N.position,
-	            edge_color = 'grey',
-	            edge_size = .01,
-	            node_color = 'black',
-	            node_size = 0,
-	            alpha = .2,
-	            with_labels=False,
-	            arrows = False)
+		nx.draw(N,N.position,
+				edge_color = 'grey',
+				edge_size = .01,
+				node_color = 'black',
+				node_size = 0,
+				alpha = .2,
+				with_labels=False,
+				arrows = False)
 
-	    M.position = {m : (M.node[m]['pos'][1], - M.node[m]['pos'][0]) for m in M}
-	    nx.draw(M, 
-	            M.position,
-	            edge_color = '#5A0000',
-	            edge_size = 60,
-	            node_size = 0,
-	            arrows = False,
-	            with_labels = False)
+		M.position = {m : (M.node[m]['pos'][1], - M.node[m]['pos'][0]) for m in M}
+		nx.draw(M, 
+				M.position,
+				edge_color = '#5A0000',
+				edge_size = 60,
+				node_size = 0,
+				arrows = False,
+				with_labels = False)
 
-	    if show == True:
-	    	plt.show()
-	    
+		if show == True:
+			plt.show()
+		
 	   
 
 	def betweenness_plot_scatter(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
@@ -291,23 +291,23 @@ class multiplex:
 		N.size = [float(N.node[n][measure]) / 20000 for n in N]
 
 		nx.draw(N,N.position,
-		    edge_color = 'grey',
-		    edge_size = .01,
-		    node_size = N.size,
-		    node_color = '#003399',
-		    linewidths = 0,
-		    alpha = .1,
-		    with_labels=False,
-		    arrows = False)
+			edge_color = 'grey',
+			edge_size = .01,
+			node_size = N.size,
+			node_color = '#003399',
+			linewidths = 0,
+			alpha = .1,
+			with_labels=False,
+			arrows = False)
 
 		M.position = {m : (M.node[m]['pos'][1], M.node[m]['pos'][0]) for m in M}
 		nx.draw(M, 
-		    M.position,
-		    edge_color = '#5A0000',
-		    edge_size = 60,
-		    node_size = 0,
-		    arrows = False,
-		    with_labels = False)
+			M.position,
+			edge_color = '#5A0000',
+			edge_size = 60,
+			node_size = 0,
+			arrows = False,
+			with_labels = False)
 		plt.savefig(file_name)
 
 	def random_nodes_in(self, layers = [], n_nodes = 1):
@@ -358,9 +358,30 @@ class multiplex:
 		d = {v['name'] : intermodality(v = v, g = g, nodes = nodes, weight = weight) for v in nodes}
 		
 		nx.set_node_attributes(self.G, 'intermodality', d)
+
+	def spatial_outreach(self, layer = None, weight = None, cost = None):
+		from shapely.geometry import MultiPoint
 		
+		def distance_matrix(nodes, weight):
+			N = len(nodes)
+			lengths = g.shortest_paths_dijkstra(weights = weight, source = nodes, target = nodes)
+			d = {nodes[i] : {nodes[j] : lengths[i][j] for j in range(N) } for i in range(N)}
+			return d
 
-
-
-
+		def ego(n, cost):
+			return [j for j in nodes if d[n][j] <= cost]
+	
+		def area(n, cost):
+			points = [pos[n] for n in ego(n, cost)]
+			return MultiPoint(points).convex_hull.area
+			
+		print 'converting to igraph'
+		g = utility.nx_2_igraph(self.G)
+		nodes = g.vs.select(lambda vertex: vertex['layer'] == layer)['name']
+		pos = {v['name'] : v['pos'] for v in g.vs.select(lambda v: v['name'] in nodes)}
+		print 'computing distance matrix, this could take a while'
+		d = distance_matrix(nodes, weight)
+		
+		outreach = {n : area(n, cost) for n in nodes}
+		nx.set_node_attributes(self.G, 'outreach_' + str(cost), outreach)
 
