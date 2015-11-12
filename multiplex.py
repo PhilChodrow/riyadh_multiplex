@@ -14,17 +14,28 @@ import matplotlib.cm as cm
 import random
 
 class multiplex:
-	
+	'''
+
+	multiplex class is a thin wrapper for a the networkx.DiGraph() object, for 
+	cases in which that object is composed of distinct layers. 
+
+	attributes: 
+		self.layers -- (list) list of strings
+		self.G -- a networkx.DiGraph object, all of whose nodes and edges have a 
+		'layer' attribute. Many methods also assume that the nodes have a 'pos' 
+		attribute of the form (lat, lon) 
+
+	'''
 	def __init__(self):
 		self.layers = []
-		# self.layers = []
 		self.G = nx.DiGraph()
 
 	def add_layers(self, layer_dict):
 		'''
-		layer_dict: a dict of layer names and graphs, e.g. {'metro' : metro, 'street' : street}
-
-		Adds layer_dict.keys() to self.layers and layer_dict.values() to multiplex, with all nodes and edges having attributes in layer_dict.keys()
+		Add layers from a dict of networkx graphs.
+		
+		args:
+		    layer_dict: (dict) a dict of layer names and graphs, e.g. {'metro' : metro, 'street' : street}
 		'''
 		for layer in layer_dict:
 			if layer in self.layers: 
@@ -40,31 +51,50 @@ class multiplex:
 
 	def add_epsilon(self, weight, epsilon):
 		'''
-		All layers in the multiplex must have nonzero cost for betweenness calculations. 
+		Add an infinitesimal positive number to a numeric attribute of self.G.edges()
+
+		args:
+			weight  -- (str) the numeric attribute to increment
+			epsilon -- (float) the amount by which to increment, typically very small.  
+		
+		Use case: some edges have zero cost_time_m, but the betweenness
+		algorithm used requires nonzero weights. 
+
 		'''
 		d = {e : float(self.G.edge[e[0]][e[1]][weight] or 0) + epsilon for e in self.G.edges_iter()}
 		nx.set_edge_attributes(self.G, weight, d)
 
 	def label_nodes(self):
 		'''
-		Relabel the nodes in the format layer_int
+		Relabel the nodes in the format layer_int, e.g. 'streets_214'. 
 		'''
 		nx.convert_node_labels_to_integers(self.G)
 		new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) for n in self.G.node} 
 		nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
 
 	def add_graph(self, H):
+		'''
+		Add a single graph to self.G and update layers. 
+
+		args:
+			H -- a networkx.DiGraph() object whose nodes and edges all have a 'layer' attribute. 
+		'''
 		self.G = nx.disjoint_union(self.G, H)
 		self.update_layers()
 		self.label_nodes()
 
 	def get_layers(self):
+		'''Return the current layer list.'''
 		return self.layers
 		
 	def remove_layer(self, layer):
 		'''
-		layer: the name of an element of self.layers
-		removes layer from self.layers and deletes all nodes + edges with attribute layer. 
+		Delete a layer from the multiplex. All nodes and edges in that layer are
+		removed.
+
+		args: 
+			layer -- (str) the name of an element of self.layers
+		 
 		'''
 		if layer not in self.layers:
 			print "Sorry, " + layer + ' is not current in the multiplex.'
@@ -74,16 +104,27 @@ class multiplex:
 
 	def check_layer(self, layer_name):
 		'''
-		Quick boolean check to see whether a given layer is actually an element of the G. 
+		Check to see if G contains layer_name as a layer.
+
+		args: 
+			layer_name -- (str) the layer to check
 		'''
 		return layer_name in self.layers 
 	
 	def spatial_join(self, layer1, layer2, transfer_speed, base_cost, both = True):
 		'''
-		Adds edges to multiplex between ALL nodes of layer1 and the nodes of layer2 spatially nearest to layer1. 
+		Add edges to between ALL nodes of layer1 and the nodes of layer2 spatially nearest to the nodes of layer1. 
 		New edges are labelled 'layer1_layer2_T' and 'layer1_layer2_T' is added to self.layers.  
-		Example: spatial_join(layer1 = 'metro', layer2 = 'street')
 		Requires that each node in each G have a 'pos' tuple of format (latitude, longitude). 
+		
+		args: 
+			layer1         -- (str) base layer, all nodes joined to one node in layer2
+			layer2         -- (str) layer to which layer1 will be joined
+			transfer_speed -- (float) assumed speed at which transfer distance can be traversed, e.g. walking speed from street to metro. 
+			base_cost      -- (float) base cost associated with transfer, e.g. mean time spent waiting for metro.
+			both           -- (bool) if true, transfer is bidirectional.   		
+
+		Example: spatial_join(layer1 = 'metro', layer2 = 'street')
 		'''	
 		transfer_layer_name = layer1 + '--' + layer2
 		self.layers.append(transfer_layer_name)
@@ -112,68 +153,87 @@ class multiplex:
 
 	def layers_as_subgraph(self, layers):
 		'''
-		docs of course! 
+		return a subset of the layers of self.G as a networkx.DiGraph() object. 
+		args: 
+			layers -- (list) a list of layers to return
 		'''
 		return self.G.subgraph([n for n,attrdict in self.G.node.items() if attrdict['layer'] in layers])
 
 	def sub_multiplex(self, sublayers):
 		'''
-		sublayers: a list of layers, all of which must be elements of self.layers
-		returns: a multiplex object consisting only of those layers and any connections between them. 
+		return a subset of the layers of self.G as a multiplex() object. 
+		
+		args:
+			sublayers -- (list) a list of layers, all of which must be elements of self.layers
+		
 		'''
-		subMultiplex = multiplex()        
+		sub_multiplex = multiplex()        
 		sublayer_dict = {layer : self.zlayer_as_subgraph(layer) for layer in sublayers}
-		subMultiplex.add_layers(sublayer_dict)
+		sub_multiplex.add_layers(sublayer_dict)
 		return subMultiplex
 
 	def as_graph(self):
 		'''
-		Return self.multiplex as a standard graph object. self.sub_multiplex(sublayers).as_graph() to get a graph consisting only of certain layers. 
+		Return self.multiplex as a networkx.DiGraph() object. 
 		'''
 		return self.G
 
 	def update_node_attributes(self, attr):
 		'''
-		attr: a dict with nodenames as keys. Values are attribute dicts. 
+		set the attributes of self.G.node
+
+		args:
+			attr -- (dict) a dict with nodenames as keys. Values are attribute dicts. 
 		'''
-		print 'Not implemented.'
 
 		for n in attr:
 			for att in attr[n]: self.G.node[n][att] = attr[n][att]
 
 	def update_edge_attributes(self, attr):
 		'''
-		attr: a dict with edgenames (or node 2-tuples) as keys. Values are attribute dicts. 
+		set the attributes of self.G.node
+
+		args:
+			attr -- (dict) a dict with edgenames (or node 2-tuples) as keys. Values are attribute dicts. 
 		'''
 		for e in attr:
 			for att in attr[e]: self.G.edge[e[0]][e[1]] = attr[e][att]
 
-	def summary(self, print_summary = False):
+	def summary(self):
 		'''
-		Return a dict of the form {'layer_name' : (num_layer_nodes, num_layer_edges)}
+		view a summary of self, printed to the terminal
 		'''
 		layers = {layer: (len([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer]), 
 						  len([(u,v,d) for u,v,d in self.G.edges(data=True) if d['layer'] == layer])) for layer in self.layers} 
-		if print_summary:
-			print "Layer \t N \t E "
-			for layer in layers:
-				print layer, "\t", layers[layer][0], "\t", layers[layer][1] 
-		return layers 
+		
+		print "Layer \t N \t E "
+		for layer in layers:
+			print layer, "\t", layers[layer][0], "\t", layers[layer][1]  
 
 	def to_txt(self, directory, file_name):
 		'''
-		saves file_name_nodes.txt and file_name_edges.txt in a readable format to the working directory. 
+		save the multiplex to a pair of .txt documents for later processing. 
+		
+		args: 
+			directory -- (str) the directory in which to save the file_name
+			file_name -- (str) the file prefix, will have '_nodes.txt' and _edges.txt' suffixed. 
 		'''
 		utility.write_nx_nodes(self.G, directory, file_name + '_nodes.txt')
 		utility.write_nx_edges(self.G, directory, file_name + '_edges.txt')
 
 	def update_layers(self):
+		'''
+		Check that layers includes all values of 'layer' attributes in self.G
+		'''
 		new_layers = set([attrdict['layer'] for n, attrdict in self.G.node.items()])
 		new_layers.update(set([d['layer'] for u,v,d in self.G.edges(data=True)]))
 		self.layers = list(new_layers)
 
 	def igraph_betweenness_centrality(self, layers = None, weight = None, attrname = 'bc'):
 		'''
+		compute the (weighted) betweenness centrality of one or more layers and save to self.G.node attributes. 
+
+		args: 
 			thru_layers -- the layers on which to calculate betweenness. 
 			source_layers -- the layers to use as sources in betweenness calculation.
 			target_layers -- the layers to use as targets in the betweenness calculation.  
@@ -194,47 +254,31 @@ class multiplex:
 
 
 	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
+		"""
+		multiply specified edge attributes by a specified constant
+
+		Args:
+		    layer (str, optional): the layer to scale
+		    attribute (TYPE, optional): attribute to scale
+		    beta (int, optional): constant by which to scale attribute
+		"""
 		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.layers_as_subgraph([layer]).edges_iter()}
 		nx.set_edge_attributes(self.G, attribute, d)
 
-
-	def streets_betweenness_plot(self, draw_metro = True, file_name = None, attrname = 'bc', norm = 1):
-		'''
-		Draw a simple betweenness plot, nothing too fancy. 
-		'''
-		streets = self.layers_as_subgraph(['streets'])
+	def spatial_plot_interpolated(self, layer1, layer2, measure, title, file_name, show = False):
+		""" Create an interpolated plot of a spatially-distributed measure.
 		
-		streets.position = {n : (streets.node[n]['pos'][1], streets.node[n]['pos'][0]) for n in streets}
-		N = len(streets.node)
-		streets.size = [streets.node[n][attrname] for n in streets.node]
-		streets.size = [n / norm for n in streets.size]
+		Args:
+		    layer1 (str): base layer, nodes must have 'measure' as a numeric attribute. 
+		    layer2 (str): other layer to draw, e.g. 'metro'
+		    measure (str): measure to plot, e.g. betweenness centrality
+		    title (str): plot title
+		    file_name (str): name under which to save file
+		    show (bool, optional): if True, call plt.show() to interactively view plot. 
 		
-		fig = plt.figure(figsize = (15,15), dpi = 500)
-		ax = fig.add_subplot(111)		
-		nx.draw(streets,streets.position,
-				edge_color = 'grey',
-				edge_size = .01,
-				node_color = 'blue',
-				node_size=streets.size,
-				alpha = .1,
-				with_labels=False,
-				arrows = False,
-				cmap=plt.cm.Blues)
-
-		if draw_metro:
-			metro = self.layers_as_subgraph(['metro'])
-			metro.position = {n:(metro.node[n]['pos'][1], metro.node[n]['pos'][0])for n in metro}
-			nx.draw(metro, metro.position,
-					node_size = 2,
-					edge_size = 400,
-					arrows = False,
-					alpha = 1,
-					edge_color = 'red')
-
-		plt.savefig(file_name)
-
-	def spatial_plot_interpolated(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None, show = False):
-			
+		Returns:
+		    None
+		"""
 		N = self.layers_as_subgraph([layer1])
 		M = self.layers_as_subgraph([layer2])
 
@@ -278,9 +322,19 @@ class multiplex:
 		if show == True:
 			plt.show()
 		
-	def betweenness_plot_scatter(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
-
+	def betweenness_plot_scatter(self, layer1, layer2, measure, title, file_name):
+		"""Create a basic spatially distributed scatter plot.
 		
+		Args:
+		    layer1 (str): base layer, nodes must have 'measure' as a numeric attribute. 
+		    layer2 (str): other layer to draw, e.g. 'metro'
+		    measure (str): measure to plot, e.g. betweenness centrality
+		    title (str): plot title
+		    file_name (str): name under which to save file
+		
+		Returns:
+		    None
+		"""
 		N = self.layers_as_subgraph([layer1])
 		M = self.layers_as_subgraph([layer2])
 
@@ -308,7 +362,15 @@ class multiplex:
 		plt.savefig(file_name)
 
 	def random_nodes_in(self, layers = [], n_nodes = 1):
+		"""Generate a list of random node names in a specified set of layers
 		
+		Args:
+		    layers (list, optional): the layers from which to sample
+		    n_nodes (int, optional): the number of random nodes to return
+		
+		Returns:
+		    list: a list of randomly sampled nodes
+		"""
 		H = self.layers_as_subgraph(layers = layers)
 		nodes = [n for n in H.node]
 		nodes = random.sample(nodes, n_nodes)
@@ -319,14 +381,43 @@ class multiplex:
 		return nodes
 
 	def layers_of(self, nbunch = []):
+		"""retrieve the layers included in a given set of nodes. 
+		[probably slow due to repeated queries to G, a cached version might be faster]
+		
+		Args:
+		    nbunch (list, optional): a list of node ids
+		
+		Returns:
+		    list: a list of layers assocated with the specified node ids
+		"""
 		layers_found = set([self.G.node[n]['layer'] for n in nbunch])
 		
 		return layers_found
 
 	def shortest_path(self, source, target, weight = 'weight'):
+		"""basic single-path routing. Fine for basic use-cases, too slow for mass computations. 
+		
+		Args:
+		    source (list): a list of source nodes
+		    target (list): a list of target nodes
+		    weight (str, optional): the edge weight by which to compute shortest paths. 
+		
+		Returns:
+		    list: a list of the nodes comprising the shortest path. 
+		"""
 		return nx.shortest_path(self.G, source = source, target = target, weight = weight)
 
 	def mean_edge_attr_per(self, layers = [], attr = 'weight', weight_attr = None):
+		"""compute the optionally weighted mean of a specified edge attribute 
+		
+		Args:
+		    layers (list, optional): the layers across which to compute the average
+		    attr (str, optional): the numeric attribute of which to compute the mean 
+		    weight_attr (str, optional): the numeric attribute to use as weights 
+		
+		Returns:
+		    None
+		"""
 		H = self.layers_as_subgraph(layers = layers)
 		attr_array = np.array([H.edge[e[0]][e[1]][attr] for e in H.edges_iter()])
 
@@ -339,7 +430,16 @@ class multiplex:
 
 
 	def local_intermodality(self, layer = None, thru_layer = None, weight = None):
-
+		"""Compute the local intermodality of a set of nodes and save as a node attribute. 
+		
+		Args:
+		    layer (str, optional): the layer for which to compute intermodality
+		    thru_layer (str, optional): the layer through which a path couns as 'intermodal'
+		    weight (str, optional): the numeric edge attribute used to weight paths
+		
+		Returns:
+		    None
+		"""
 		g = utility.nx_2_igraph(self.G)
 		nodes = g.vs.select(layer=layer)
 
@@ -359,7 +459,13 @@ class multiplex:
 	def spatial_outreach(self, layer = None, weight = None, cost = None, attrname = 'outreach'):
 		'''
 		Compute the spatial outreach of all nodes in a layer according to a specified edge weight (e.g. cost_time_m). 
-		Currently uses area of convex hull to measure outreach. 
+		Currently uses area of convex hull to measure outreach.
+		
+		Args:
+		    layer (TYPE, optional): the layer in which to compute spatial outreach
+		    weight (TYPE, optional): the numeric edge attribute by which to measure path lengths
+		    cost (TYPE, optional): the maximum path length 
+		    attrname (str, optional): the base name to use when saving the computed outreach
 		'''
 		from shapely.geometry import MultiPoint
 		
@@ -386,7 +492,17 @@ class multiplex:
 		outreach = {n : area(n, cost) for n in nodes}
 		nx.set_node_attributes(self.G, attrname, outreach)
 
-	def proximity_to(self, layers, to_layer, weight = None):
+	def proximity_to(self, layers, to_layer):
+		"""Calculate how close nodes in one layer are to nodes in another. Closeness 
+		is measured as Euclidean distance, not graph distance. 
+		
+		Args:
+		    layers (TYPE): base layer from which to compute proximity
+		    to_layer (TYPE): layer to which to calculate proximity 
+		
+		Returns:
+		    TYPE: Description
+		"""
 		layers_copy = self.layers_as_subgraph(layers)	
 		to_layer_copy = self.layers_as_subgraph([to_layer])
 		d = {n : utility.find_nearest(n, layers_copy, to_layer_copy)[1] for n in layers_copy.node}
