@@ -30,7 +30,7 @@ def main():
 	multi = mx.multiplex() # initialize empty multiplex
 	multi.add_layers(layer_dict) # add metro and street layers to multiplex
 	print multi.get_layers()
-	multi.spatial_join(layer1 = 'metro', layer2 = 'streets', transfer_speed = .1, base_cost = 0, both = True)
+	multi.spatial_join(layer1 = 'metro', layer2 = 'streets', transfer_speed = 100000000000, base_cost = 0, both = True)
 	multi.spatial_join(layer1 = 'taz', layer2 = 'streets', transfer_speed = 10000000000000000, base_cost = 0, both = True)
 
 	multi.to_txt('2. multiplex', 'multiplex')
