@@ -73,6 +73,20 @@ def write_nx_nodes(N, directory, file_name):
 
 	nodes.close()
 
+def nodes_2_df(N):
+	col_names = set([])
+	for n in N.node:
+		col_names = col_names.union(N.node[n].keys())
+
+	d = {}
+	for col in col_names: 
+		attr = nx.get_node_attributes(N, col)
+		attr = [attr[n] if n in attr.keys() else None for n in N.node]
+		d[col] = attr
+	
+	return pd.DataFrame(d)
+
+
 def write_nx_edges(N, directory, file_name):
 	'''
 	N: a networkx graph.
@@ -108,7 +122,6 @@ def write_nx_edges(N, directory, file_name):
 
 	edges.close()
 
-
 def rename_node_attribute(N, old, new):
 	nx.set_node_attributes(N, new, nx.get_node_attributes(N, old))
 
@@ -119,7 +132,6 @@ def rename_edge_attribute(N, old, new):
 	nx.set_edge_attributes(N, new, nx.get_edge_attributes(N, old))
 	for e in N.edges_iter():
 		del N.edge[e[0]][e[1]][old]
-
 
 def find_nearest(n, N1, N2):
 	'''
@@ -326,10 +338,10 @@ def simple_idw(x, y, z, xi, yi, threshhold):
 
     # Multiply the weights for each interpolated point by all observed Z-values
     zi = np.dot(weights.T, z)
-    gap = zi[dist.min(axis = 0) > threshhold].max()
-    zi[dist.min(axis = 0) > threshhold] = 0
-    zi = zi - gap
-    zi[zi < 0] = 0
+    # gap = zi[dist.min(axis = 0) > threshhold].max()
+    # zi[dist.min(axis = 0) > threshhold] = 0
+    # zi = zi - gap
+    # zi[zi < 0] = 0
     return zi
 
 def plot(x,y,z,grid):
@@ -370,5 +382,16 @@ def read_multi():
 def check_directory(directory):
 	if not os.path.exists(directory):
 		os.makedirs(directory)
+
+def gini_coeff(x):
+	'''
+	From http://www.ellipsix.net/blog/2012/11/the-gini-coefficient-for-distribution-inequality.html
+	'''
+	# requires all values in x to be zero or positive numbers,
+	# otherwise results are undefined
+	n = len(x)
+	s = x.sum()
+	r = np.argsort(np.argsort(-x)) # calculates zero-based ranks
+	return 1 - (2.0 * (r*x).sum() + s)/(n*s)
 
 
