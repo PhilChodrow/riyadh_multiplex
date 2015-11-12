@@ -21,6 +21,8 @@ def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', n
 		Docs
 	'''
 	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
+	nodes = nodes.convert_objects(convert_numeric=True)
+	
 	N = nx.DiGraph()
 	for n in range(len(nodes)):
 		attr = {nid: nodes[nid][n]}
@@ -85,7 +87,6 @@ def nodes_2_df(N):
 		d[col] = attr
 	
 	return pd.DataFrame(d)
-
 
 def write_nx_edges(N, directory, file_name):
 	'''
