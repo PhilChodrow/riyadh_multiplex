@@ -12,14 +12,33 @@ import matplotlib.cm as cm
 import numpy as np
 
 def d(pos1,pos2):
+	"""Compute geographical distance between two points
+	
+	Args:
+	    pos1 (tuple): a tuple of the form (lat, lon)
+	    pos2 (tuple): a tuple of the form (lat, lon)
+	
+	Returns:
+	    float: the geographical distance between points, in kilometers
+	"""
 	LAT_DIST = 110766.95237186992 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
 	LON_DIST = 101274.42720366278 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
 	return math.sqrt((LAT_DIST*(pos1[0]- pos2[0]))**2 + (LON_DIST*(pos1[1] - pos2[1]))**2)
 
 def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', nid = None, eidfrom = None, eidto = None):
-	'''
-		Docs
-	'''
+	"""Summary
+	
+	Args:
+	    nodes_file_name (str, optional): the file in which to find node ids and attributes
+	    edges_file_name (str, optional): the file in which to find edge ids and attributes
+	    sep (str, optional): the separator character used in the node and edge files
+	    nid (str, optional): the hashable attribute used to identify nodes
+	    eidfrom (str, optional): the hashable attribute used to identify sources of edges (must match nid)
+	    eidto (str, optional): the hashable attribute used to identify targets of edges (must match nid)
+	
+	Returns:
+	    a networkx.DiGraph() object
+	"""
 	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
 	nodes = nodes.convert_objects(convert_numeric=True)
 	
@@ -42,9 +61,11 @@ def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', n
 
 def write_nx_nodes(N, directory, file_name):
 	'''
-	N: a networkx graph.
-	file_name: a string with the name of the file to be saved. 
-	OUT: No return value. Writes a file with name file_name of N's node ids and attributes, tab-separated. 
+	Write the nodes of a networkx.DiGraph() object to a .txt file
+	Args:
+	    N (networkx.DiGraph()): the graph to write
+	    directory (str): the directory in which to save the file
+	    file_name (str): the name under which to save the file
 	'''
 	col_names = set([])
 	for n in N.node:
@@ -76,6 +97,15 @@ def write_nx_nodes(N, directory, file_name):
 	nodes.close()
 
 def nodes_2_df(N):
+	"""
+	Convert the nodes of a networkx.DiGraph() object into a pandas.DataFrame
+
+	Args:
+	    N (networkx.DiGraph()): the graph to convert
+
+	Returns: 
+		a pandas.DataFrame with node attributes as columns
+	"""
 	col_names = set([])
 	for n in N.node:
 		col_names = col_names.union(N.node[n].keys())
@@ -89,11 +119,16 @@ def nodes_2_df(N):
 	return pd.DataFrame(d)
 
 def write_nx_edges(N, directory, file_name):
-	'''
-	N: a networkx graph.
-	file_name: a string with the name of the file to be saved. 
-	OUT: No return value. Writes a file with name file_name of N's node ids and attributes, tab-separated. 
-	'''
+	"""Write the edges of a networkx.DiGraph() object to a .txt file.
+	
+	Args:
+	    N (networkx.DiGraph()): the networkx.DiGraph() object to write
+	    directory (str): The directory in which to save the file
+	    file_name (str): the name of the file
+	
+	Returns:
+	    None
+	"""
 	col_names = set([])
 	for e in N.edges_iter():
 		col_names = col_names.union(N.edge[e[0]][e[1]].keys())
@@ -124,36 +159,63 @@ def write_nx_edges(N, directory, file_name):
 	edges.close()
 
 def rename_node_attribute(N, old, new):
+	""" rename a node attribute in a networkx.DiGraph() object. 
+	
+	Args:
+	    N (networkx.DiGraph()): the networkx.DiGraph() containing an attribute to rename
+	    old (str): the old name of the attribute
+	    new (str): the new name of the attribute
+	
+	Returns:
+	    None
+	"""
 	nx.set_node_attributes(N, new, nx.get_node_attributes(N, old))
 
 	for n in N.node:
 		del N.node[n][old]
 
 def rename_edge_attribute(N, old, new):
+	"""rename an edge attribute in a networkx.DiGraph() object
+	
+	Args:
+	    N (networkx.DiGraph()): the networkx.DiGraph() object containing the edge attribute to rename
+	    old (str): the old name of the edge attribute
+	    new (str): the new name of the edge attribute
+	
+	Returns:
+	    None
+	"""
 	nx.set_edge_attributes(N, new, nx.get_edge_attributes(N, old))
 	for e in N.edges_iter():
 		del N.edge[e[0]][e[1]][old]
 
 def find_nearest(n, N1, N2):
-	'''
-	n, a node in network N1
-	N1, a networkx graph whose nodes have lat and lon attributes
-	N2, a networkx graph whose nodes have lat and lon attributes
-	RETURNS: a 2-tuple containing: the node in network N2 spatially nearest to n,the distance from n to that node in km.
-	'''
-
+	"""for a fixed node n in network N1, find th nearest node in network N2
+	
+	Args:
+	    n (str): the node from which to start
+	    N1 (networkx.DiGraph()): the network in which n lies. Must have a 'pos' attribute.
+	    N2 (networkx.DiGraph()): the network in which to find the node nearest to N1. Must have a 'pos' attribute. 
+	
+	Returns:
+	    str, int: the nearest neighbor in N2 and the distance to that neighbor
+	"""
 	dists = {m: d(N1.node[n]['pos'], N2.node[m]['pos']) for m in N2}
 	nearest = min(dists, key=dists.get)
 	nearest_dist = dists[nearest]
 	return nearest, nearest_dist
 
 def spatial_multiplex_join(N1, N2, TRANSFER_SPEED):
-	'''
-	N1, a networkx graph with a graph mode attribute and whose nodes have lat, lon, and mode attributes equal to the graph mode attribute.  
-	N2, a networkx graph with a graph mode attribute and whose nodes have lat, lon, and mode attributes equal to the graph mode attribute. Mode attributes must be different than N1.
-	TRANSFER_SPEED, the speed in meters per second of transfer from N1 to N2. E.g. walking time from parking lot to subway station.
-	RETURNS: a networkx graph containing each of N1 and N2, joined by edges between the nodes of N1 and the nearest nodes of N2. These edges have the edge attribute mode = 'transfer', dist = length of transfer, and weight = dist/TRANSFER_SPEED. 
-	'''
+	"""join nodes in N1 to their nearest neighbors in N2
+	
+	Args:
+	    N1 (networkx.DiGraph()): the network from which to search for nearest neighbors
+	    N2 (networkx.DiGraph()): the network in which to search for nearest neighbors
+	    TRANSFER_SPEED (float): the speed at which transfers are assumed traversed, in km/m
+	
+	Returns:
+	    networkx.DiGraph(): a graph including N1, N2, and the new links between them. 
+	"""
 	multiplex = nx.disjoint_union(N1, N2)
 
 	N1_nodes = [n for n in multiplex.node if multiplex.node[n]['mode'] == N1.mode]
@@ -172,6 +234,15 @@ def spatial_multiplex_join(N1, N2, TRANSFER_SPEED):
 	return multiplex
 
 def read_metro(directory, file_prefix):
+	"""convenience function to quickly read in and clean the metro network
+	
+	Args:
+	    directory (str): the location in which to find the node and edge files
+	    file_prefix (TYPE): the prefix of the node and edge files
+	
+	Returns:
+	    networkx.DiGraph(): the metro network
+	"""
 	metro = graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
 	                       edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
 	                       sep = '\t', 
@@ -204,7 +275,15 @@ def read_metro(directory, file_prefix):
 	return metro
 
 def read_streets(directory, file_prefix):
-
+	"""convenience function to quickly read in the street network 
+	
+	Args:
+	    directory (str): the directory in which to find the street network node and edge files
+	    file_prefix (str): the file prefix of the node and edge files
+	
+	Returns:
+	    networkx.DiGraph(): the street network. 
+	"""
 	streets = graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
 	                       edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
 	                       sep = ' ', 
@@ -230,8 +309,9 @@ def read_streets(directory, file_prefix):
 
 def remove_flow_through(N, add):
 	'''
-	Removes flow-through nodes in a directed graph. We should probably implement some checks for this to ensure that all the additive measures work out right. 
+	NOT USED
 	'''
+	print 'You can use me, but it\'s probably a bad idea right now'
 	edges_before = len(N.edges())
 	nodes_before = len(N.nodes())
 	for n in N.nodes():
@@ -253,8 +333,9 @@ def remove_flow_through(N, add):
 
 def remove_flow_through_2(N, add):
 	'''
-	Removes flow-through nodes in a directed graph. We should probably implement some checks for this to ensure that all the additive measures work out right. 
+	NOT USED
 	'''
+	print 'You can use me, but it\'s probably a bad idea right now'
 	edges_before = len(N.edges())
 	nodes_before = len(N.nodes())
 	for n in N.nodes():
@@ -274,7 +355,14 @@ def remove_flow_through_2(N, add):
 	return N
 
 def nx_2_igraph(graph):
+	"""convert a networkx.DiGraph() object into an igraph.Graph() object. 
 	
+	Args:
+	    graph (networkx.DiGraph()): the network to convert
+	
+	Returns:
+	    igraph.Graph(): the converted network in igraph format
+	"""
 	ig_graph = ig.Graph()
 	ig_graph = ig_graph.as_directed(mutual = False)
 
@@ -294,6 +382,14 @@ def nx_2_igraph(graph):
 	return ig_graph
 
 def igraph_2_nx(ig_graph):
+	"""convert an igraph.Graph() object into a networkx.DiGraph() object
+	
+	Args:
+	    ig_graph (igraph.Graph()): the graph to convert
+	
+	Returns:
+	    networkx.DiGraph(): the converted graph
+	"""
 	print 'Converting to networkx format'
 	nx_graph = nx.DiGraph()
 	for v in ig_graph.vs:
@@ -307,6 +403,14 @@ def igraph_2_nx(ig_graph):
 	return nx_graph
 
 def multiplex_from_txt(**kwargs):
+	"""Convenience function to quickly read a multiplex object from a pair of node and edge files. 
+	
+	Args:
+	    **kwargs: kwargs passed down to utility.graph_from_txt()
+	
+	Returns:
+	    multiplex.multiplex(): a multiplex object with appropriate attributes, etc. 
+	"""
 	G = graph_from_txt(**kwargs)
 	pos = {n : (literal_eval(G.node[n]['pos'])) for n in G}
 
@@ -371,6 +475,11 @@ def idw_smoothed_plot(layer, measure):
     plot(x,y,z,grid1)
 
 def read_multi():
+	"""A convenience function for easily reading in pipeline's multiplex. 
+	
+	Returns:
+	    multiplex.multiplex(): the pipeline's multiplex from make_multiplex.py
+	"""
 	multi = multiplex_from_txt(nodes_file_name = '2. multiplex/multiplex_nodes.txt',
 	                                   edges_file_name = '2. multiplex/multiplex_edges.txt',
 	                                   sep = '\t',
@@ -381,12 +490,25 @@ def read_multi():
 	return multi
 
 def check_directory(directory):
+	"""check for the existence of a directory and add if it's not there. 
+	
+	Args:
+	    directory (str): the directory to check
+	
+	Returns:
+	    None
+	"""
 	if not os.path.exists(directory):
 		os.makedirs(directory)
 
 def gini_coeff(x):
 	'''
+	compute the gini coefficient from an array of floats
+	
 	From http://www.ellipsix.net/blog/2012/11/the-gini-coefficient-for-distribution-inequality.html
+	
+	Args:
+	    x (np.array()): an array of floats
 	'''
 	# requires all values in x to be zero or positive numbers,
 	# otherwise results are undefined
