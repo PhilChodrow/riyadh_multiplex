@@ -20,8 +20,8 @@ def main():
 		utility.check_directory(directory)
 		multi = prep(measure1, measure2)
 		d = calc_distribution(multi, measure1, measure2, layer = 'taz')
-		plot1(d, measure1, measure2)
-		plot2(d, measure1, measure2)
+		plot1(d, measure1, measure2, directory)
+		plot2(d, measure1, measure2, directory)
 
 def prep(measure1, measure2):
 	multi = utility.read_multi()
@@ -48,7 +48,7 @@ def calc_distribution(multi, measure1, measure2, layer):
 	d = pd.DataFrame(d)
 	return d
 
-def plot1(d, measure1, measure2):
+def plot1(d, measure1, measure2, directory):
 	fig1 = plt.figure(figsize = (10,12), dpi = 500)
 
 	with sns.axes_style("white"):
@@ -58,7 +58,7 @@ def plot1(d, measure1, measure2):
 		h.set_axis_labels(measure1, measure2)
 		sns.plt.savefig(directory + '/' + measure1 + '__' + measure2 + '_joint_density.png')
 
-def plot2(d, measure1, measure2):
+def plot2(d, measure1, measure2, directory):
 	fig2 = plt.figure()
 	f = sns.distplot(d[measure1], kde = True)
 	f.set(xlim = (0, None))
