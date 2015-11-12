@@ -242,7 +242,6 @@ class multiplex:
 		y = np.array([- N.node[n]['pos'][0] for n in N.node])
 		z = np.array([float(N.node[n][measure]) for n in N.node])
 	   
-
 		mx, my = 100, 100
 		xi = np.linspace(x.min(), x.max(), mx)
 		yi = np.linspace(y.min(), y.max(), my)
@@ -279,8 +278,6 @@ class multiplex:
 		if show == True:
 			plt.show()
 		
-	   
-
 	def betweenness_plot_scatter(self, layer1, layer2, measure, title, file_name, vmin = None, vmax = None):
 
 		
@@ -359,7 +356,11 @@ class multiplex:
 		
 		nx.set_node_attributes(self.G, 'intermodality', d)
 
-	def spatial_outreach(self, layer = None, weight = None, cost = None):
+	def spatial_outreach(self, layer = None, weight = None, cost = None, attrname = 'outreach'):
+		'''
+		Compute the spatial outreach of all nodes in a layer according to a specified edge weight (e.g. cost_time_m). 
+		Currently uses area of convex hull to measure outreach. 
+		'''
 		from shapely.geometry import MultiPoint
 		
 		def distance_matrix(nodes, weight):
@@ -381,7 +382,15 @@ class multiplex:
 		pos = {v['name'] : v['pos'] for v in g.vs.select(lambda v: v['name'] in nodes)}
 		print 'computing distance matrix, this could take a while'
 		d = distance_matrix(nodes, weight)
-		
+		print 'computing outreach'
 		outreach = {n : area(n, cost) for n in nodes}
-		nx.set_node_attributes(self.G, 'outreach_' + str(cost), outreach)
+		nx.set_node_attributes(self.G, attrname, outreach)
+
+	def proximity_to(self, layers, to_layer, weight = None):
+		layers_copy = self.layers_as_subgraph(layers)	
+		to_layer_copy = self.layers_as_subgraph([to_layer])
+		d = {n : utility.find_nearest(n, layers_copy, to_layer_copy)[1] for n in layers_copy.node}
+		nx.set_node_attributes(self.G, 'proximity_to_' + to_layer, d)
+		
+
 
