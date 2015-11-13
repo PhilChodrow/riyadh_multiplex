@@ -15,16 +15,13 @@ import random
 
 class multiplex:
 	'''
-
 	multiplex class is a thin wrapper for a the networkx.DiGraph() object, for 
 	cases in which that object is composed of distinct layers. 
-
 	attributes: 
 		self.layers -- (list) list of strings
 		self.G -- a networkx.DiGraph object, all of whose nodes and edges have a 
 		'layer' attribute. Many methods also assume that the nodes have a 'pos' 
 		attribute of the form (lat, lon) 
-
 	'''
 	def __init__(self):
 		self.layers = []
@@ -47,19 +44,40 @@ class multiplex:
 				nx.set_edge_attributes(layer_dict[layer], 'layer', layer)
 				self.G = nx.disjoint_union(self.G, layer_dict[layer])
 				self.label_nodes()
-				
+	
+		
+	#NOTE: I'm using my old function for now because I need to preserve the original node names to keep them consistent with imported data sets (ODs, connectors, etc)
+	#The problem is that the nx.disjoint_union function uses sequential node labeling but this prevents us from using any data sets that refer to the original node names
+	       #If you know a way to map from old to new names, I could convert the imported data sets to the new names and my code could just use the sequentially labeled nodes exclusively 
+	       #Alternatively, we could keep the original names in the initial setup and convert to sequential labeling when preprocessing for the igraph functions
+        def add_layers2(self, layer_dict):
+                '''
+                layer_dict: a dict of layer names and graphs, e.g. {'metro' : metro, 'street' : street}
+                
+                Adds layer_dict.keys() to self.layers and layer_dict.values() to multiplex, with all nodes and edges having attributes in layer_dict.keys()
+                '''
+                for layer in layer_dict:
+                    if layer in self.layers: print "ERROR: The layer", layer, "is already defined in the multiplex, did not overwrite"
+                    else:
+                        self.layers.append(layer)
+                        for n in layer_dict[layer].nodes(): 
+                            n2 = str(layer) + "_" + str(n)
+                            self.G.add_node(n2, layer = layer)
+                            for attribute in layer_dict[layer].node[n]: self.G.node[n2][attribute] = layer_dict[layer].node[n][attribute]
+                        for start, end in layer_dict[layer].edges():
+                            start2, end2 = str(layer) + "_" + str(start), str(layer) + "_" + str(end)
+                            self.G.add_edge( start2, end2, layer = layer )
+                            for attribute in layer_dict[layer].edge[start][end]: self.G.edge[start2][end2][attribute] = layer_dict[layer].edge[start][end][attribute]
 
 	def add_epsilon(self, weight, epsilon):
 		'''
 		Add an infinitesimal positive number to a numeric attribute of self.G.edges()
-
 		args:
 			weight  -- (str) the numeric attribute to increment
 			epsilon -- (float) the amount by which to increment, typically very small.  
 		
 		Use case: some edges have zero cost_time_m, but the betweenness
 		algorithm used requires nonzero weights. 
-
 		'''
 		d = {e : float(self.G.edge[e[0]][e[1]][weight] or 0) + epsilon for e in self.G.edges_iter()}
 		nx.set_edge_attributes(self.G, weight, d)
@@ -75,7 +93,6 @@ class multiplex:
 	def add_graph(self, H):
 		'''
 		Add a single graph to self.G and update layers. 
-
 		args:
 			H -- a networkx.DiGraph() object whose nodes and edges all have a 'layer' attribute. 
 		'''
@@ -91,7 +108,6 @@ class multiplex:
 		'''
 		Delete a layer from the multiplex. All nodes and edges in that layer are
 		removed.
-
 		args: 
 			layer -- (str) the name of an element of self.layers
 		 
@@ -105,7 +121,6 @@ class multiplex:
 	def check_layer(self, layer_name):
 		'''
 		Check to see if G contains layer_name as a layer.
-
 		args: 
 			layer_name -- (str) the layer to check
 		'''
@@ -123,7 +138,6 @@ class multiplex:
 			transfer_speed -- (float) assumed speed at which transfer distance can be traversed, e.g. walking speed from street to metro. 
 			base_cost      -- (float) base cost associated with transfer, e.g. mean time spent waiting for metro.
 			both           -- (bool) if true, transfer is bidirectional.   		
-
 		Example: spatial_join(layer1 = 'metro', layer2 = 'street')
 		'''	
 		transfer_layer_name = layer1 + '--' + layer2
@@ -150,7 +164,61 @@ class multiplex:
 				bidirectional = "bidirectional "
 
 			print 'Added ' + bidirectional + 'transfer between ' + str(n) + ' in ' + layer1 + ' and ' + str(nearest) + ' in ' + layer2 + ' of length ' + str(round(nearest_dist, 2)) + 'km.'
+        
+        #NOTE: This is a simpler version of spatial join that avoids using distance/time calculations and uses fixed edge attributes instead
+            #While the original method would be quite useful as a general class feature, the problem with our data sets is that the metro and road networks aren't aligned well enough  
+            #As a result, the Euclidean distance between nodes in different layers (especially at a scale of tens of meters) will be dominated by the noise and won't produce a meaningful result 
+            #Essentially, we would be going beyond the resolution of the data and adding complexity without necessarily improving accuracy or realism
+        def spatial_join2(self, layer1, layer2, time_cost, distance = 0., both = True):
+		'''
+		Add edges to between ALL nodes of layer1 and the nodes of layer2 spatially nearest to the nodes of layer1. 
+		New edges are labelled 'layer1_layer2_T' and 'layer1_layer2_T' is added to self.layers.  
+		Requires that each node in each G have a 'pos' tuple of format (latitude, longitude). 
+		
+		args: 
+			layer1         -- (str) base layer, all nodes joined to one node in layer2
+			layer2         -- (str) layer to which layer1 will be joined
+			time_cost      -- (float) time cost associated with transfer, e.g. mean time spent waiting for metro.
+			distance       -- (float) spatial distance between nodes in kilometers
+			both           -- (bool) if true, transfer is bidirectional.   		
+		Example: spatial_join(layer1 = 'metro', layer2 = 'street')
+		'''	
+		transfer_layer_name = layer1 + '--' + layer2
+		self.layers.append(transfer_layer_name)
+		
+		layer1_copy = self.layers_as_subgraph([layer1])	
+		layer2_copy = self.layers_as_subgraph([layer2])
 
+		for n in layer1_copy.node:
+			nearest, nearest_dist = utility.find_nearest(n, layer1_copy, layer2_copy)
+			self.G.add_edge(n, nearest, 
+							layer = transfer_layer_name,
+							weight = 0,
+							dist_km = distance, 
+							cost_time_m = time_cost)
+			
+			bidirectional = ""
+			if both: 
+				self.G.add_edge(nearest, n, 
+								layer = transfer_layer_name,
+								weight = 0,
+								dist_km = distance, 
+								cost_time_m = time_cost) # assumes bidirectional
+				bidirectional = "bidirectional "
+
+			#print 'Added ' + bidirectional + 'transfer between ' + str(n) + ' in ' + layer1 + ' and ' + str(nearest) + ' in ' + layer2 + ' of length ' + str(round(nearest_dist, 2)) + 'km.'
+
+        def manual_join(self, layer1, layer2, joinDict, time_cost, distance = 0., both = True):
+	       '''
+	       Adds edges to multiplex between two layers using a given dictionary
+	       '''	
+	       transfer_layer_name = layer1 + '--' + layer2
+	       self.layers.append(transfer_layer_name)
+	       for start in joinDict:
+	           end = joinDict[start]
+	           self.G.add_edge(start, end, dist_km = distance, cost_time_m = time_cost, layer = transfer_layer_name)
+	           if both: self.G.add_edge(end, start, dist_km = distance, cost_time_m = time_cost, layer = transfer_layer_name) 
+                
 	def layers_as_subgraph(self, layers):
 		'''
 		return a subset of the layers of self.G as a networkx.DiGraph() object. 
@@ -170,7 +238,7 @@ class multiplex:
 		sub_multiplex = multiplex()        
 		sublayer_dict = {layer : self.zlayer_as_subgraph(layer) for layer in sublayers}
 		sub_multiplex.add_layers(sublayer_dict)
-		return subMultiplex
+		return sub_multiplex
 
 	def as_graph(self):
 		'''
@@ -181,7 +249,6 @@ class multiplex:
 	def update_node_attributes(self, attr):
 		'''
 		set the attributes of self.G.node
-
 		args:
 			attr -- (dict) a dict with nodenames as keys. Values are attribute dicts. 
 		'''
@@ -192,7 +259,6 @@ class multiplex:
 	def update_edge_attributes(self, attr):
 		'''
 		set the attributes of self.G.node
-
 		args:
 			attr -- (dict) a dict with edgenames (or node 2-tuples) as keys. Values are attribute dicts. 
 		'''
@@ -232,12 +298,10 @@ class multiplex:
 	def igraph_betweenness_centrality(self, layers = None, weight = None, attrname = 'bc'):
 		'''
 		compute the (weighted) betweenness centrality of one or more layers and save to self.G.node attributes. 
-
 		args: 
 			thru_layers -- the layers on which to calculate betweenness. 
 			source_layers -- the layers to use as sources in betweenness calculation.
 			target_layers -- the layers to use as targets in the betweenness calculation.  
-
 		'''
 		print 'Computing betweenness centrality -- this could take a while.' 
 
@@ -256,7 +320,6 @@ class multiplex:
 	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
 		"""
 		multiply specified edge attributes by a specified constant
-
 		Args:
 		    layer (str, optional): the layer to scale
 		    attribute (TYPE, optional): attribute to scale
@@ -507,6 +570,267 @@ class multiplex:
 		to_layer_copy = self.layers_as_subgraph([to_layer])
 		d = {n : utility.find_nearest(n, layers_copy, to_layer_copy)[1] for n in layers_copy.node}
 		nx.set_node_attributes(self.G, 'proximity_to_' + to_layer, d)
+	
+	def routify(self, path):
+	       """
+	       Takes a list of nodes and returns the corresponding list of edges
+	       
+	       """
+	       return [ (path[i], path[i+1]) for i in range(len(path)-1) ]
+    
+        def dijkstra(self, origin, destination, weight):
+                '''
+                Finds the shortest path from a single origin to a single destination 
+                Possibly redundant, I would expect this to return the same result as your shortest_path function
+                
+                Args:
+		    origin (str): the initial node in the path
+		    destination (str): the intended destination of the path
+		    weight (str): the edge weight by which to compute shortest paths. 
 		
+		Returns:
+		    list: a list of the nodes comprising the shortest path. 
+                '''
+                q = [ (0, origin, None) ]
+                seen = {}
+                while q:
+                    dist, current, parent = heappop(q)
+                    if current == destination:
+                        path = [current]
+                        node = parent
+                        while node != None:
+                            path.append(node)
+                            node = seen[node]
+                        path.reverse()
+                        return path
+                    if current in seen:
+                        continue
+                    seen[current] = parent
+                    for nextNode, edge in self.G[current].items():
+                        if nextNode in seen: continue
+                        heappush(q, (dist + edge[weight], nextNode, current) )  
+                    
+        def multi_dijkstra(self, origin, weight, OD):
+                '''
+                Finds the shortest path from the origin to all destinations in the OD dictionary
+                Returns the OD-weighted betweenness (traffic volume) in a dictionary indexed by the corresponding edge
+                
+                Args:
+		    origin (str): the initial node for all the paths
+		    weight (str): the edge weight by which to compute shortest paths.
+		    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
+		       The dictionary OD[origin] should contain all the destinations with flows from this origin
+		                
+		Returns:
+		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+                '''
+                volume = {}
+                dest = { d: False for d in OD[origin] }
+                N, size = 0, len(dest)
+                q = [ (0, origin, None) ]
+                seen = {}
+                while q:
+                    dist, current, parent = heappop(q)
+                    if current in dest:
+                        path = [current]
+                        node = parent
+                        while node != None:
+                            path.append(node)
+                            node = seen[node]
+                        path.reverse()
+                        for edge in self.routify(path):
+                            if edge in volume: volume[edge] += OD[origin][current]
+                            else: volume[edge] = OD[origin][current]
+                        del dest[current]
+                        N += 1
+                        if N == size or len(dest) == 0: 
+                            return volume
+                    if current in seen:
+                        continue
+                    seen[current] = parent
+                    for nextNode, edge in self.G[current].items():
+                        if nextNode in seen: continue
+                        heappush(q, (dist + edge[weight], nextNode, current) )  
+                return volume
+        
+        
+        def multi_dijkstra_length(self, origin, weight, OD):
+                '''
+                Finds the shortest path from the origin to all destinations in the OD dictionary
+                Returns a dictionary containing the total path length for each OD pair in the given weight 
+                
+                Args:
+		    origin (str): the initial node for all the paths
+		    weight (str): the edge weight by which to compute shortest paths.
+		    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
+		       The dictionary OD[origin] should contain all the destinations with flows from this origin
+		                
+		Returns:
+		    dict: a dictionary of path lengths (in the given weight) indexed by the destination
+                '''
+                lengths = {}
+                dest = { d: False for d in OD[origin] }
+                N, size = 0, len(dest)
+                q = [ (0, origin, None) ]
+                seen = {}
+                while q:
+                    dist, current, parent = heappop(q)
+                    if current in dest:
+                        path = [current]
+                        node = parent
+                        while node != None:
+                            path.append(node)
+                            node = seen[node]
+                        path.reverse()
+                        lengths[current] = 0.
+                        for e1,e2 in self.routify(path): lengths[current] += self.G.edge[e1][e2][weight]
+                        del dest[current]
+                        N += 1
+                        if N == size or len(dest) == 0: 
+                            return lengths
+                    if current in seen:
+                        continue
+                    seen[current] = parent
+                    for nextNode, edge in self.G[current].items():
+                        if nextNode in seen: continue
+                        heappush(q, (dist + edge[weight], nextNode, current) )  
+                return lengths
+    
+        def multi_dijkstra_topo(self, origin, OD):
+                '''
+                Finds the topological shortest path form the origin to all destinations in the OD dictionary (treats every edge as having a weight of 1)
+            
+                Args:
+		    origin (str): the initial node for all the paths
+		    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
+		       The dictionary OD[origin] should contain all the destinations with flows from this origin
+		                
+		Returns:
+		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+                '''
+                volume = {}
+                dest = { d: False for d in OD[origin] }
+                N, size = 0, len(dest)
+                q = [ (0, origin, None) ]
+                seen = {}
+                while q:
+                    dist, current, parent = heappop(q)
+                    if current in dest:
+                        path = [current]
+                        node = parent
+                        while node != None:
+                            path.append(node)
+                            node = seen[node]
+                        path.reverse()
+                        for edge in self.routify(path):
+                            if edge in volume: volume[edge] += OD[origin][current]
+                            else: volume[edge] = OD[origin][current]
+                        del dest[current]
+                        N += 1
+                        if N == size or len(dest) == 0: 
+                            return volume
+                    if current in seen:
+                        continue
+                    seen[current] = parent
+                    for nextNode, edge in self.G[current].items():
+                        if nextNode in seen: continue
+                        heappush(q, (dist + 1, nextNode, current) ) 
+        
+        def geo_betweenness(self, weight, OD = None):
+                '''
+                Calculates the betweenness of the multiplex network using the minimum-weight shortest path (volumes can be weighted by OD flows)
+                
+                Args:
+		    weight (str): the edge weight by which to compute shortest paths.
+		    OD (dict, optional): a nested dictionary with the structure OD[origin] = { destination: flow }
+		       The dictionary OD[origin] should contain all the destinations with flows from this origin
+		       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand) 
+		                
+		Returns:
+		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+                '''
+                volume = {}
+                start = clock()
+                routed, nones = 0, 0
+                if OD == None:
+                    OD = {}
+                    for n in self.G.node: OD[n] = { n2: 1 for n2 in self.G.node if n != n2 }
+                for origin in OD:
+                    volume0 = self.multi_dijkstra(origin, weight, OD)
+                    for v in volume0: 
+                        if v in volume: volume[v] += volume0[v]
+                        else: volume[v] = volume0[v]
+                total = clock() - start
+                ODL = sum( [ len(OD[o]) for o in OD ] )
+                print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
+                return volume
+        
+        def geo_betweenness_ITA(self, volumeScale, OD = None, pathOD = None, P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4.):
+                '''
+                Calculates the betweenness of the multiplex network using the minimum-weight shortest path (volumes can be weighted by OD flows)
+                This method updates travel times for congestion by using the BPR function and ITA to iteratively update the time cost of edges
+                
+                Args:
+		    volumeScale (float): a multiplicative scaling factor for the OD flows
+		    OD (dict, optional): a nested dictionary with the structure OD[origin] = { destination: flow }
+		       The dictionary OD[origin] should contain all the destinations with flows from this origin
+		       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand) 
+		               
+                    pathOD (dict, optional): if used, computes the shortest path lengths for all the OD pairs in this dictionary
+                        This is used for validation with Google's results, it doesn't affect the betweenness calculation
 
+		Returns:
+		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+                '''
+                volume = {}
+                start = clock()
+                if OD == None: OD = { n: { n2: 1 for n2 in self.G.node if n != n2 } for n in self.G.node }
+                for e1,e2 in self.G.edges():
+                    if self.G.edge[e1][e2]['layer'] == 'D': self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']
+                if pathOD != None:
+                    print "Calculating free flow travel times"
+                    lengths = [ {}, {} ]
+                    for origin in pathOD:
+                        lengths[0][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
+                for p in P:
+                    print "Starting traffic assignment for p =", p
+                    stdout.flush()
+                    for origin in OD:
+                        volume0 = self.multi_dijkstra(origin, 'cost_time_m', OD)
+                        for v in volume0: 
+                            if v in volume: volume[v] += p*volume0[v]*volumeScale
+                            else: volume[v] = p*volume0[v]*volumeScale
+                    for e1,e2 in volume: 
+                        if self.G.edge[e1][e2]['layer'] == 'D': 
+                            self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']*( 1. + a*( (volume[(e1,e2)]/self.G.edge[e1][e2]['capacity'])**b ) )
+                if pathOD != None:
+                    print "Calculating congested travel times"
+                    for origin in pathOD:
+                        lengths[1][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
+                total = clock() - start
+                ODL = sum( [ len(OD[o]) for o in OD ] )
+                print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
+                return volume, lengths
 
+        def accessible_nodes(self, origin, weight, limit):
+                '''
+                Returns a dictionary of all nodes that can be accessed within the given limit according to the specified weight
+                
+                Args:
+		    origin (str): the source node
+		    weight (str): the edge weight by which to compute shortest paths.
+		    limit (float): the upper bound for accessible shortest paths
+		                
+		Returns:
+		    dict: a dictionary of shortest path lengths (in the given weight) indexed by the destination node
+                '''
+                q = [ (0, origin, None) ]
+                seen = {}
+                while q:
+                    dist, current, parent = heappop(q)
+                    if dist > limit: break
+                    seen[current] = dist
+                    for nextNode, edge in self.G[current].items():
+                        if nextNode in seen: continue
+                        heappush(q, (dist + edge[weight], nextNode, current) )  
+                return seen
