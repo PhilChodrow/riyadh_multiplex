@@ -12,10 +12,11 @@ def main():
 	else:
 		# params
 		weight = sys.argv[1]
-		cost = sys.argv[2]
+		cost = int(sys.argv[2])
+		
 		directory = '4. figs/outreach/' + weight
 		layer = 'taz'
-		betas = [.2, 10]
+		betas = [.1,.3, 1, 10]
 
 		# prep
 		utility.check_directory(directory)
@@ -24,7 +25,7 @@ def main():
 		compute_outreach(multi = multi, 
 		                 layer = 'taz',
 						 weight = 'cost_time_m',
-						 cost = 30,
+						 cost = cost,
 						 betas = betas)
 		
 		# First plot
@@ -32,6 +33,7 @@ def main():
 		            layer = layer, 
 					betas = betas, 
 					cost = cost)
+		print df.head()
 		pairs_plot(df, directory)
 		
 		# Second plot
@@ -44,7 +46,7 @@ def main():
 				  cost = cost)
 
 # primary computation
-def compute_outreach(multi = None, layer = 'taz', weight = 'cost_time_m', cost = 30, betas = [1.0]):
+def compute_outreach(multi, layer, weight, cost, betas):
 	for beta in betas:
 		m = str(beta) + weight
 		multi.scale_edge_attribute(layer = 'metro', attribute = 'weight', beta = beta)
@@ -58,7 +60,9 @@ def compute_outreach(multi = None, layer = 'taz', weight = 'cost_time_m', cost =
 def get_df(multi = None, layer = 'taz', betas = [1.0], cost = None):
 
 	df = utility.nodes_2_df(multi.as_graph())
+	print len(df)
 	df = df[df['layer'] == layer]
+	print len(df)
 	cols = [str(beta) + '_outreach_' + str(cost) for beta in betas]
 	cols.append('proximity_to_metro')
 	df = df[cols]
@@ -67,6 +71,8 @@ def get_df(multi = None, layer = 'taz', betas = [1.0], cost = None):
 	quantiles = df.quantile(0.01)
 	for col in cols: 
 		df = df[df[col] > quantiles[col]]
+
+	print len(df)
 
 	return df
 
@@ -78,7 +84,7 @@ def pairs_plot(df, directory):
 	
 	plt.savefig(directory + '/pairs.png')
 
-def get_vlims(df = None, mult = 0.95):
+def get_vlims(df = None, mult = 1.00):
 	del df['proximity_to_metro']
 	vmin = min([df[col].quantile(0.01) for col in df])*mult
 	vmax = max([df[col].quantile(0.01) for col in df])*1/mult
