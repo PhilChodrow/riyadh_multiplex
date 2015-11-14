@@ -783,13 +783,13 @@ class multiplex:
 		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
                 '''
                 volume = {}
+                lengths = [ {}, {} ]
                 start = clock()
                 if OD == None: OD = { n: { n2: 1 for n2 in self.G.node if n != n2 } for n in self.G.node }
                 for e1,e2 in self.G.edges():
                     if self.G.edge[e1][e2]['layer'] == 'D': self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']
                 if pathOD != None:
                     print "Calculating free flow travel times"
-                    lengths = [ {}, {} ]
                     for origin in pathOD:
                         lengths[0][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
                 for p in P:
