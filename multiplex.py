@@ -774,11 +774,11 @@ class multiplex:
 		    volumeScale (float): a multiplicative scaling factor for the OD flows
 		    OD (dict, optional): a nested dictionary with the structure OD[origin] = { destination: flow }
 		       The dictionary OD[origin] should contain all the destinations with flows from this origin
-		       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand) 
-		               
+		       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand)        
                     pathOD (dict, optional): if used, computes the shortest path lengths for all the OD pairs in this dictionary
                         This is used for validation with Google's results, it doesn't affect the betweenness calculation
-
+                    P (list/tuple, optional): the increments for the ITA algorithm, the sum total should be 1 or it won't fully map the OD flows
+                    
 		Returns:
 		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
                 '''

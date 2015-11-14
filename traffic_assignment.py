@@ -20,14 +20,14 @@ metroWait = 0.                    #The average waiting time (min) at metro stops
 
 #Imports the metro stations (nodes) and lines (edges)
 def readMetro(filePath):
-    with open(filePath+"Metro Nodes.txt", 'r') as f:
+    with open(filePath+"metro/metro_nodes.txt", 'r') as f:
         rows = f.read().splitlines()
         size = len(rows)
         stations = [0]*(size)
         for i in range(0,size):
             row = rows[i].split()
             stations[i] = [ row[0].strip(), float(row[1]), float(row[2]) ]
-    with open(filePath+"Metro Edges.txt", 'r') as f:
+    with open(filePath+"metro/metro_edges.txt", 'r') as f:
         rows = f.read().splitlines()
         size = len(rows)
         lines = [0]*(size)
@@ -36,27 +36,17 @@ def readMetro(filePath):
             lines[i] = [ row[0].strip(), row[1].strip() , float(row[2].strip()), float(row[3].strip()) ]
     return stations, lines
 
-#Imports the list of parking areas near specific metro station
-def readParking(filePath):
-    with open(filePath + "Parking.txt", 'r') as f:
-        rows = f.read().splitlines()
-        size = len(rows)
-        parking = [0]*size
-        for i in range(0,size):
-            row = rows[i].split()
-            parking[i] = [ row[0].strip(), row[1].strip() ]
-        return parking
 
 #Imports the intersections (nodes) and roads (edges)
 def readRoad(filePath):
-    with open(filePath+"Road Nodes.txt", 'r') as f:
+    with open(filePath+"street/street_nodes.txt", 'r') as f:
         rows = f.read().splitlines()
         size = len(rows)
         inter = [0]*(size-1)
         for i in range(1,size):
             row = rows[i].split()
             inter[i-1] = [int(row[0]), float(row[1])+roadOffset[0], float(row[2])+roadOffset[1] ]
-    with open(filePath+"Road Edges 2.txt", 'r') as f:
+    with open(filePath+"street/street_nodes.txt", 'r') as f:
         rows = f.read().splitlines()
         size = len(rows)
         roads = [0]*(size-1)
@@ -81,7 +71,7 @@ def readOD(directory, purpose, time):
     if purpose < 0 or purpose > 3 or time < 0 or time > 3:
         print 'No file exists: choose parameters between 0 and 3'
         return 
-    ODpath = directory + str(purpose) + '_' + str(time) + '.txt'
+    ODpath = directory + "TAZ_OD/" + str(purpose) + '_' + str(time) + '.txt'
     with open(ODpath, 'r') as f:
         rows = f.read().splitlines()
         size = len(rows)-1
@@ -139,7 +129,7 @@ def createNetwork(filePath):
     nodes, edges = readRoad(filePath)
     stations, lines = readMetro(filePath)
     D, M = nx.DiGraph(), nx.DiGraph()
-    C, con, conJoin = connectorGraph(filePath + "TAZ Connectors.txt")
+    C, con, conJoin = connectorGraph(filePath + "TAZ Connectors/TAZ Connectors.txt")
     for n in nodes: D.add_node(n[0], pos = (n[1], n[2]), ntype = 'I')
     for e in edges: D.add_edge(e[1], e[2], gid = e[0], dist_km = e[3], cost_time_m = drivingScale*e[4], free_flow_time = drivingScale*e[4], capacity = e[5])
     for s in stations: M.add_node(s[0], pos = (s[1], s[2]), ntype = 'S')
@@ -155,7 +145,7 @@ def createNetwork(filePath):
 def createDrivingNetwork(filePath):
     nodes, edges = readRoad(filePath)
     D = nx.DiGraph()
-    C, con, conJoin = connectorGraph(filePath + "TAZ Connectors.txt")
+    C, con, conJoin = connectorGraph(filePath + "TAZ Connectors/TAZ Connectors.txt")
     for n in nodes: D.add_node(n[0], pos = (n[1], n[2]), ntype = 'I', layer = "D")
     for e in edges: D.add_edge(e[1], e[2], gid = e[0], dist_km = e[3], cost_time_m = drivingScale*e[4], free_flow_time = drivingScale*e[4], capacity = e[5])
     removeZeros(D)
@@ -289,14 +279,13 @@ def plot_voc(multi, volume):
     plt.show()
 
 
-directory = "/Users/Zeyad/Desktop/Public Transportation Network/Network Data/"
-googleDirectory = '/Users/Zeyad/Downloads/Routes 2.txt'
+directory = "/Users/Zeyad/Desktop/CCES/Transportation/multiplex-metro/multiplex-metro/data/"
 
 multi, con = createNetwork(directory)
 driving, con2 = createDrivingNetwork(directory)
 conOD = connectorOD(multi, directory, con)
     
-routes = readGoogle(googleDirectory)
+routes = readGoogle(directory+"google_times.txt")
 googleOD = { origin: { destination: True for destination in routes[origin] } for origin in routes } 
 volume, pathLengths = multi.geo_betweenness_ITA(0.25, conOD, googleOD)
 volume2, pathLengths2 = driving.geo_betweenness_ITA(0.25, conOD, googleOD)
