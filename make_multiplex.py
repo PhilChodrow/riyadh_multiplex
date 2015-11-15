@@ -36,10 +36,10 @@ def main():
 	print multi.get_layers()
 	
 	# Spatial joins + feature engineering
-	multi.spatial_join(layer1 = 'metro', layer2 = 'streets', transfer_speed = 10000000000000000, base_cost = 0, both = True)
-	multi.spatial_join(layer1 = 'taz', layer2 = 'streets', transfer_speed = 10000000000000000, base_cost = 0, both = True)
+	multi.spatial_join(layer1 = 'metro', layer2 = 'streets', transfer_speed = 10000000000000000000, base_cost = 5, both = True)
+	multi.spatial_join(layer1 = 'taz', layer2 = 'streets', transfer_speed = 10000000000000000000, base_cost = 5, both = True)
 
-	multi.proximity_to(['taz'], 'metro', weight = None)
+	multi.proximity_to(['taz'], 'metro')
 
 	# save to text file
 	multi.to_txt('2. multiplex', 'multiplex')

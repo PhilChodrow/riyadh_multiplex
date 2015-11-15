@@ -98,7 +98,12 @@ class multiplex:
 		'''
 		self.G = nx.disjoint_union(self.G, H)
 		self.update_layers()
-		self.label_nodes()
+		self.set_node_labels('id')
+		
+
+	def set_node_labels(self, label):
+		new_labels = {n : self.G.node[n][label] for n in self.G.node}
+		nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
 
 	def get_layers(self):
 		'''Return the current layer list.'''
@@ -169,55 +174,18 @@ class multiplex:
             #While the original method would be quite useful as a general class feature, the problem with our data sets is that the metro and road networks aren't aligned well enough  
             #As a result, the Euclidean distance between nodes in different layers (especially at a scale of tens of meters) will be dominated by the noise and won't produce a meaningful result 
             #Essentially, we would be going beyond the resolution of the data and adding complexity without necessarily improving accuracy or realism
-        def spatial_join2(self, layer1, layer2, time_cost, distance = 0., both = True):
-		'''
-		Add edges to between ALL nodes of layer1 and the nodes of layer2 spatially nearest to the nodes of layer1. 
-		New edges are labelled 'layer1_layer2_T' and 'layer1_layer2_T' is added to self.layers.  
-		Requires that each node in each G have a 'pos' tuple of format (latitude, longitude). 
-		
-		args: 
-			layer1         -- (str) base layer, all nodes joined to one node in layer2
-			layer2         -- (str) layer to which layer1 will be joined
-			time_cost      -- (float) time cost associated with transfer, e.g. mean time spent waiting for metro.
-			distance       -- (float) spatial distance between nodes in kilometers
-			both           -- (bool) if true, transfer is bidirectional.   		
-		Example: spatial_join(layer1 = 'metro', layer2 = 'street')
-		'''	
-		transfer_layer_name = layer1 + '--' + layer2
-		self.layers.append(transfer_layer_name)
-		
-		layer1_copy = self.layers_as_subgraph([layer1])	
-		layer2_copy = self.layers_as_subgraph([layer2])
+       
 
-		for n in layer1_copy.node:
-			nearest, nearest_dist = utility.find_nearest(n, layer1_copy, layer2_copy)
-			self.G.add_edge(n, nearest, 
-							layer = transfer_layer_name,
-							weight = 0,
-							dist_km = distance, 
-							cost_time_m = time_cost)
-			
-			bidirectional = ""
-			if both: 
-				self.G.add_edge(nearest, n, 
-								layer = transfer_layer_name,
-								weight = 0,
-								dist_km = distance, 
-								cost_time_m = time_cost) # assumes bidirectional
-				bidirectional = "bidirectional "
-
-			#print 'Added ' + bidirectional + 'transfer between ' + str(n) + ' in ' + layer1 + ' and ' + str(nearest) + ' in ' + layer2 + ' of length ' + str(round(nearest_dist, 2)) + 'km.'
-
-        def manual_join(self, layer1, layer2, joinDict, time_cost, distance = 0., both = True):
-	       '''
-	       Adds edges to multiplex between two layers using a given dictionary
-	       '''	
-	       transfer_layer_name = layer1 + '--' + layer2
-	       self.layers.append(transfer_layer_name)
-	       for start in joinDict:
-	           end = joinDict[start]
-	           self.G.add_edge(start, end, dist_km = distance, cost_time_m = time_cost, layer = transfer_layer_name)
-	           if both: self.G.add_edge(end, start, dist_km = distance, cost_time_m = time_cost, layer = transfer_layer_name) 
+    def manual_join(self, layer1, layer2, joinDict, time_cost, distance = 0., both = True):
+       '''
+       Adds edges to multiplex between two layers using a given dictionary
+       '''	
+       transfer_layer_name = layer1 + '--' + layer2
+       self.layers.append(transfer_layer_name)
+       for start in joinDict:
+           end = joinDict[start]
+           self.G.add_edge(start, end, dist_km = distance, cost_time_m = time_cost, layer = transfer_layer_name)
+           if both: self.G.add_edge(end, start, dist_km = distance, cost_time_m = time_cost, layer = transfer_layer_name) 
                 
 	def layers_as_subgraph(self, layers):
 		'''
