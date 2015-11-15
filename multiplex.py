@@ -546,259 +546,259 @@ class multiplex:
 	       """
 	       return [ (path[i], path[i+1]) for i in range(len(path)-1) ]
     
-        def dijkstra(self, origin, destination, weight):
-                '''
-                Finds the shortest path from a single origin to a single destination 
-                Possibly redundant, I would expect this to return the same result as your shortest_path function
-                
-                Args:
-		    origin (str): the initial node in the path
-		    destination (str): the intended destination of the path
-		    weight (str): the edge weight by which to compute shortest paths. 
-		
-		Returns:
-		    list: a list of the nodes comprising the shortest path. 
-                '''
-                q = [ (0, origin, None) ]
-                seen = {}
-                while q:
-                    dist, current, parent = heappop(q)
-                    if current == destination:
-                        path = [current]
-                        node = parent
-                        while node != None:
-                            path.append(node)
-                            node = seen[node]
-                        path.reverse()
-                        return path
-                    if current in seen:
-                        continue
-                    seen[current] = parent
-                    for nextNode, edge in self.G[current].items():
-                        if nextNode in seen: continue
-                        heappush(q, (dist + edge[weight], nextNode, current) )  
-                    
-        def multi_dijkstra(self, origin, weight, OD):
-                '''
-                Finds the shortest path from the origin to all destinations in the OD dictionary
-                Returns the OD-weighted betweenness (traffic volume) in a dictionary indexed by the corresponding edge
-                
-                Args:
-		    origin (str): the initial node for all the paths
-		    weight (str): the edge weight by which to compute shortest paths.
-		    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
-		       The dictionary OD[origin] should contain all the destinations with flows from this origin
-		                
-		Returns:
-		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
-                '''
-                volume = {}
-                dest = { d: False for d in OD[origin] }
-                N, size = 0, len(dest)
-                q = [ (0, origin, None) ]
-                seen = {}
-                while q:
-                    dist, current, parent = heappop(q)
-                    if current in dest:
-                        path = [current]
-                        node = parent
-                        while node != None:
-                            path.append(node)
-                            node = seen[node]
-                        path.reverse()
-                        for edge in self.routify(path):
-                            if edge in volume: volume[edge] += OD[origin][current]
-                            else: volume[edge] = OD[origin][current]
-                        del dest[current]
-                        N += 1
-                        if N == size or len(dest) == 0: 
-                            return volume
-                    if current in seen:
-                        continue
-                    seen[current] = parent
-                    for nextNode, edge in self.G[current].items():
-                        if nextNode in seen: continue
-                        heappush(q, (dist + edge[weight], nextNode, current) )  
-                return volume
-        
-        
-        def multi_dijkstra_length(self, origin, weight, OD):
-                '''
-                Finds the shortest path from the origin to all destinations in the OD dictionary
-                Returns a dictionary containing the total path length for each OD pair in the given weight 
-                
-                Args:
-		    origin (str): the initial node for all the paths
-		    weight (str): the edge weight by which to compute shortest paths.
-		    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
-		       The dictionary OD[origin] should contain all the destinations with flows from this origin
-		                
-		Returns:
-		    dict: a dictionary of path lengths (in the given weight) indexed by the destination
-                '''
-                lengths = {}
-                dest = { d: False for d in OD[origin] }
-                N, size = 0, len(dest)
-                q = [ (0, origin, None) ]
-                seen = {}
-                while q:
-                    dist, current, parent = heappop(q)
-                    if current in dest:
-                        path = [current]
-                        node = parent
-                        while node != None:
-                            path.append(node)
-                            node = seen[node]
-                        path.reverse()
-                        lengths[current] = 0.
-                        for e1,e2 in self.routify(path): lengths[current] += self.G.edge[e1][e2][weight]
-                        del dest[current]
-                        N += 1
-                        if N == size or len(dest) == 0: 
-                            return lengths
-                    if current in seen:
-                        continue
-                    seen[current] = parent
-                    for nextNode, edge in self.G[current].items():
-                        if nextNode in seen: continue
-                        heappush(q, (dist + edge[weight], nextNode, current) )  
-                return lengths
-    
-        def multi_dijkstra_topo(self, origin, OD):
-                '''
-                Finds the topological shortest path form the origin to all destinations in the OD dictionary (treats every edge as having a weight of 1)
+    def dijkstra(self, origin, destination, weight):
+            '''
+            Finds the shortest path from a single origin to a single destination 
+            Possibly redundant, I would expect this to return the same result as your shortest_path function
             
-                Args:
-		    origin (str): the initial node for all the paths
-		    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
-		       The dictionary OD[origin] should contain all the destinations with flows from this origin
-		                
-		Returns:
-		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
-                '''
-                volume = {}
-                dest = { d: False for d in OD[origin] }
-                N, size = 0, len(dest)
-                q = [ (0, origin, None) ]
-                seen = {}
-                while q:
-                    dist, current, parent = heappop(q)
-                    if current in dest:
-                        path = [current]
-                        node = parent
-                        while node != None:
-                            path.append(node)
-                            node = seen[node]
-                        path.reverse()
-                        for edge in self.routify(path):
-                            if edge in volume: volume[edge] += OD[origin][current]
-                            else: volume[edge] = OD[origin][current]
-                        del dest[current]
-                        N += 1
-                        if N == size or len(dest) == 0: 
-                            return volume
-                    if current in seen:
-                        continue
-                    seen[current] = parent
-                    for nextNode, edge in self.G[current].items():
-                        if nextNode in seen: continue
-                        heappush(q, (dist + 1, nextNode, current) ) 
-        
-        def geo_betweenness(self, weight, OD = None):
-                '''
-                Calculates the betweenness of the multiplex network using the minimum-weight shortest path (volumes can be weighted by OD flows)
+            Args:
+	    origin (str): the initial node in the path
+	    destination (str): the intended destination of the path
+	    weight (str): the edge weight by which to compute shortest paths. 
+	
+	Returns:
+	    list: a list of the nodes comprising the shortest path. 
+            '''
+            q = [ (0, origin, None) ]
+            seen = {}
+            while q:
+                dist, current, parent = heappop(q)
+                if current == destination:
+                    path = [current]
+                    node = parent
+                    while node != None:
+                        path.append(node)
+                        node = seen[node]
+                    path.reverse()
+                    return path
+                if current in seen:
+                    continue
+                seen[current] = parent
+                for nextNode, edge in self.G[current].items():
+                    if nextNode in seen: continue
+                    heappush(q, (dist + edge[weight], nextNode, current) )  
                 
-                Args:
-		    weight (str): the edge weight by which to compute shortest paths.
-		    OD (dict, optional): a nested dictionary with the structure OD[origin] = { destination: flow }
-		       The dictionary OD[origin] should contain all the destinations with flows from this origin
-		       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand) 
-		                
-		Returns:
-		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
-                '''
-                volume = {}
-                start = clock()
-                routed, nones = 0, 0
-                if OD == None:
-                    OD = {}
-                    for n in self.G.node: OD[n] = { n2: 1 for n2 in self.G.node if n != n2 }
-                for origin in OD:
-                    volume0 = self.multi_dijkstra(origin, weight, OD)
-                    for v in volume0: 
-                        if v in volume: volume[v] += volume0[v]
-                        else: volume[v] = volume0[v]
-                total = clock() - start
-                ODL = sum( [ len(OD[o]) for o in OD ] )
-                print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
-                return volume
-        
-        def geo_betweenness_ITA(self, volumeScale, OD = None, pathOD = None, P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4.):
-                '''
-                Calculates the betweenness of the multiplex network using the minimum-weight shortest path (volumes can be weighted by OD flows)
-                This method updates travel times for congestion by using the BPR function and ITA to iteratively update the time cost of edges
-                
-                Args:
-		    volumeScale (float): a multiplicative scaling factor for the OD flows
-		    OD (dict, optional): a nested dictionary with the structure OD[origin] = { destination: flow }
-		       The dictionary OD[origin] should contain all the destinations with flows from this origin
-		       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand)        
-                    pathOD (dict, optional): if used, computes the shortest path lengths for all the OD pairs in this dictionary
-                        This is used for validation with Google's results, it doesn't affect the betweenness calculation
-                    P (list/tuple, optional): the increments for the ITA algorithm, the sum total should be 1 or it won't fully map the OD flows
-                    
-		Returns:
-		    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
-                '''
-                volume = {}
-                lengths = [ {}, {} ]
-                start = clock()
-                if OD == None: OD = { n: { n2: 1 for n2 in self.G.node if n != n2 } for n in self.G.node }
-                for e1,e2 in self.G.edges():
-                    if self.G.edge[e1][e2]['layer'] == 'D': self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']
-                if pathOD != None:
-                    print "Calculating free flow travel times"
-                    for origin in pathOD:
-                        lengths[0][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
-                for p in P:
-                    print "Starting traffic assignment for p =", p
-                    stdout.flush()
-                    for origin in OD:
-                        volume0 = self.multi_dijkstra(origin, 'cost_time_m', OD)
-                        for v in volume0: 
-                            if v in volume: volume[v] += p*volume0[v]*volumeScale
-                            else: volume[v] = p*volume0[v]*volumeScale
-                    for e1,e2 in volume: 
-                        if self.G.edge[e1][e2]['layer'] == 'D': 
-                            self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']*( 1. + a*( (volume[(e1,e2)]/self.G.edge[e1][e2]['capacity'])**b ) )
-                if pathOD != None:
-                    print "Calculating congested travel times"
-                    for origin in pathOD:
-                        lengths[1][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
-                total = clock() - start
-                ODL = sum( [ len(OD[o]) for o in OD ] )
-                print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
-                return volume, lengths
+    def multi_dijkstra(self, origin, weight, OD):
+            '''
+            Finds the shortest path from the origin to all destinations in the OD dictionary
+            Returns the OD-weighted betweenness (traffic volume) in a dictionary indexed by the corresponding edge
+            
+            Args:
+	    origin (str): the initial node for all the paths
+	    weight (str): the edge weight by which to compute shortest paths.
+	    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
+	       The dictionary OD[origin] should contain all the destinations with flows from this origin
+	                
+	Returns:
+	    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+            '''
+            volume = {}
+            dest = { d: False for d in OD[origin] }
+            N, size = 0, len(dest)
+            q = [ (0, origin, None) ]
+            seen = {}
+            while q:
+                dist, current, parent = heappop(q)
+                if current in dest:
+                    path = [current]
+                    node = parent
+                    while node != None:
+                        path.append(node)
+                        node = seen[node]
+                    path.reverse()
+                    for edge in self.routify(path):
+                        if edge in volume: volume[edge] += OD[origin][current]
+                        else: volume[edge] = OD[origin][current]
+                    del dest[current]
+                    N += 1
+                    if N == size or len(dest) == 0: 
+                        return volume
+                if current in seen:
+                    continue
+                seen[current] = parent
+                for nextNode, edge in self.G[current].items():
+                    if nextNode in seen: continue
+                    heappush(q, (dist + edge[weight], nextNode, current) )  
+            return volume
+    
+    
+    def multi_dijkstra_length(self, origin, weight, OD):
+            '''
+            Finds the shortest path from the origin to all destinations in the OD dictionary
+            Returns a dictionary containing the total path length for each OD pair in the given weight 
+            
+            Args:
+	    origin (str): the initial node for all the paths
+	    weight (str): the edge weight by which to compute shortest paths.
+	    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
+	       The dictionary OD[origin] should contain all the destinations with flows from this origin
+	                
+	Returns:
+	    dict: a dictionary of path lengths (in the given weight) indexed by the destination
+            '''
+            lengths = {}
+            dest = { d: False for d in OD[origin] }
+            N, size = 0, len(dest)
+            q = [ (0, origin, None) ]
+            seen = {}
+            while q:
+                dist, current, parent = heappop(q)
+                if current in dest:
+                    path = [current]
+                    node = parent
+                    while node != None:
+                        path.append(node)
+                        node = seen[node]
+                    path.reverse()
+                    lengths[current] = 0.
+                    for e1,e2 in self.routify(path): lengths[current] += self.G.edge[e1][e2][weight]
+                    del dest[current]
+                    N += 1
+                    if N == size or len(dest) == 0: 
+                        return lengths
+                if current in seen:
+                    continue
+                seen[current] = parent
+                for nextNode, edge in self.G[current].items():
+                    if nextNode in seen: continue
+                    heappush(q, (dist + edge[weight], nextNode, current) )  
+            return lengths
 
-        def accessible_nodes(self, origin, weight, limit):
-                '''
-                Returns a dictionary of all nodes that can be accessed within the given limit according to the specified weight
+    def multi_dijkstra_topo(self, origin, OD):
+            '''
+            Finds the topological shortest path form the origin to all destinations in the OD dictionary (treats every edge as having a weight of 1)
+        
+            Args:
+	    origin (str): the initial node for all the paths
+	    OD (dict): a nested dictionary with the structure OD[origin] = { destination: flow }
+	       The dictionary OD[origin] should contain all the destinations with flows from this origin
+	                
+	Returns:
+	    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+            '''
+            volume = {}
+            dest = { d: False for d in OD[origin] }
+            N, size = 0, len(dest)
+            q = [ (0, origin, None) ]
+            seen = {}
+            while q:
+                dist, current, parent = heappop(q)
+                if current in dest:
+                    path = [current]
+                    node = parent
+                    while node != None:
+                        path.append(node)
+                        node = seen[node]
+                    path.reverse()
+                    for edge in self.routify(path):
+                        if edge in volume: volume[edge] += OD[origin][current]
+                        else: volume[edge] = OD[origin][current]
+                    del dest[current]
+                    N += 1
+                    if N == size or len(dest) == 0: 
+                        return volume
+                if current in seen:
+                    continue
+                seen[current] = parent
+                for nextNode, edge in self.G[current].items():
+                    if nextNode in seen: continue
+                    heappush(q, (dist + 1, nextNode, current) ) 
+    
+    def geo_betweenness(self, weight, OD = None):
+            '''
+            Calculates the betweenness of the multiplex network using the minimum-weight shortest path (volumes can be weighted by OD flows)
+            
+            Args:
+	    weight (str): the edge weight by which to compute shortest paths.
+	    OD (dict, optional): a nested dictionary with the structure OD[origin] = { destination: flow }
+	       The dictionary OD[origin] should contain all the destinations with flows from this origin
+	       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand) 
+	                
+	Returns:
+	    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+            '''
+            volume = {}
+            start = clock()
+            routed, nones = 0, 0
+            if OD == None:
+                OD = {}
+                for n in self.G.node: OD[n] = { n2: 1 for n2 in self.G.node if n != n2 }
+            for origin in OD:
+                volume0 = self.multi_dijkstra(origin, weight, OD)
+                for v in volume0: 
+                    if v in volume: volume[v] += volume0[v]
+                    else: volume[v] = volume0[v]
+            total = clock() - start
+            ODL = sum( [ len(OD[o]) for o in OD ] )
+            print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
+            return volume
+    
+    def geo_betweenness_ITA(self, volumeScale, OD = None, pathOD = None, P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4.):
+            '''
+            Calculates the betweenness of the multiplex network using the minimum-weight shortest path (volumes can be weighted by OD flows)
+            This method updates travel times for congestion by using the BPR function and ITA to iteratively update the time cost of edges
+            
+            Args:
+	    volumeScale (float): a multiplicative scaling factor for the OD flows
+	    OD (dict, optional): a nested dictionary with the structure OD[origin] = { destination: flow }
+	       The dictionary OD[origin] should contain all the destinations with flows from this origin
+	       If nothing is given, it constructs a uniform OD that corresponds to the standard betweenness calculation (ie without travel demand)        
+                pathOD (dict, optional): if used, computes the shortest path lengths for all the OD pairs in this dictionary
+                    This is used for validation with Google's results, it doesn't affect the betweenness calculation
+                P (list/tuple, optional): the increments for the ITA algorithm, the sum total should be 1 or it won't fully map the OD flows
                 
-                Args:
-		    origin (str): the source node
-		    weight (str): the edge weight by which to compute shortest paths.
-		    limit (float): the upper bound for accessible shortest paths
-		                
-		Returns:
-		    dict: a dictionary of shortest path lengths (in the given weight) indexed by the destination node
-                '''
-                q = [ (0, origin, None) ]
-                seen = {}
-                while q:
-                    dist, current, parent = heappop(q)
-                    if dist > limit: break
-                    seen[current] = dist
-                    for nextNode, edge in self.G[current].items():
-                        if nextNode in seen: continue
-                        heappush(q, (dist + edge[weight], nextNode, current) )  
-                return seen
+	Returns:
+	    dict: a dictionary of edge betweenness values indexed by edge tuples, ie (source, target)  
+            '''
+            volume = {}
+            lengths = [ {}, {} ]
+            start = clock()
+            if OD == None: OD = { n: { n2: 1 for n2 in self.G.node if n != n2 } for n in self.G.node }
+            for e1,e2 in self.G.edges():
+                if self.G.edge[e1][e2]['layer'] == 'D': self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']
+            if pathOD != None:
+                print "Calculating free flow travel times"
+                for origin in pathOD:
+                    lengths[0][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
+            for p in P:
+                print "Starting traffic assignment for p =", p
+                stdout.flush()
+                for origin in OD:
+                    volume0 = self.multi_dijkstra(origin, 'cost_time_m', OD)
+                    for v in volume0: 
+                        if v in volume: volume[v] += p*volume0[v]*volumeScale
+                        else: volume[v] = p*volume0[v]*volumeScale
+                for e1,e2 in volume: 
+                    if self.G.edge[e1][e2]['layer'] == 'D': 
+                        self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']*( 1. + a*( (volume[(e1,e2)]/self.G.edge[e1][e2]['capacity'])**b ) )
+            if pathOD != None:
+                print "Calculating congested travel times"
+                for origin in pathOD:
+                    lengths[1][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
+            total = clock() - start
+            ODL = sum( [ len(OD[o]) for o in OD ] )
+            print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
+            return volume, lengths
+
+    def accessible_nodes(self, origin, weight, limit):
+            '''
+            Returns a dictionary of all nodes that can be accessed within the given limit according to the specified weight
+            
+            Args:
+	    origin (str): the source node
+	    weight (str): the edge weight by which to compute shortest paths.
+	    limit (float): the upper bound for accessible shortest paths
+	                
+	Returns:
+	    dict: a dictionary of shortest path lengths (in the given weight) indexed by the destination node
+            '''
+            q = [ (0, origin, None) ]
+            seen = {}
+            while q:
+                dist, current, parent = heappop(q)
+                if dist > limit: break
+                seen[current] = dist
+                for nextNode, edge in self.G[current].items():
+                    if nextNode in seen: continue
+                    heappush(q, (dist + edge[weight], nextNode, current) )  
+            return seen
