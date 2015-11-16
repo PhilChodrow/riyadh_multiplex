@@ -7,28 +7,44 @@ import collections
 import networkx as nx
 
 def main():
-	start = time.clock()
+	
+	sub_n = 200
+
 	multi = utility.read_multi()
 	G = multi.layers_as_subgraph(['taz', 'streets'])
 
 	print 'converting to igraph format'
 	g = utility.nx_2_igraph(G)
 	
-	print 'computing od_dict'
-	od = od_dict_igraph(g, od_data_dir = '1. data/taz_od/', od_file_name = '0_1.txt', nx_keys = True)
+	print 'computing od_dict for ITA()'
+	start = time.clock()
+	od = od_dict(g, od_data_dir = '1. data/taz_od/', od_file_name = '0_1.txt')
 	
-	sub_keys = od.keys()[:10]
+	sub_keys = od.keys()[:sub_n]
 	sub_od = {k : od[k] for k in sub_keys}
 	
-	print 'beginning assignment'
-	ITA(g, sub_od)
+	print 'running ITA()'
+	ITA(g, od)
 	
 	# grab the new congested times, write them to multi, and save to .txt
-	d = {(g.vs[g.∏es[i].source]['id'], g.vs[g.es[i].target]['id']) : g.es[i]['congested_time_m'] for i in range(len(g.es))}
-	nx.set_edge_attributes(multi.G, 'congested_time_m', d)
-	multi.to_txt('2. multiplex', 'test')
-	print 'script completed in ' + str((time.clock() - start) / 60.0) + ' m'
+	print 'saving ITA() results to test.py'
+	d = {(g.vs[g.es[i].source]['id'], g.vs[g.es[i].target]['id']) : g.es[i]['congested_time_m'] for i in range(len(g.es))}
+	nx.set_edge_attributes(multi.G, 'congested_time_ITA_m', d)
+	print 'ITA (igraph) completed in ' + str((time.clock() - start) / 60.0) + ' m'
 
+	# start = time.clock()
+	# print 'computing od_dict for geo_betweenness_ITA()'
+	# od = od_dict(g, od_data_dir = '1. data/taz_od/', od_file_name = '0_1.txt', nx_keys = True)
+	# sub_keys = od.keys()[:sub_n]
+	# sub_od = {k : od[k] for k in sub_keys}
+
+	# print 'running geo_betweenness_ITA()'
+	# v, l = multi.geo_betweenness_ITA(volumeScale = .25, OD = sub_od)
+	# print v
+	# nx.set_edge_attributes(multi.G, 'congested_time_geo_m', v)
+	# print 'geo_betweenness_ITA() completed in in ' + str((time.clock() - start) / 60.0) + ' m'
+	
+	multi.to_txt('2. multiplex', 'test')
 
 def read_od(data_dir, file_name):
     print 'reading OD data'
@@ -37,7 +53,7 @@ def read_od(data_dir, file_name):
     od = pd.read_table(data_dir + file_name, sep = " ")
     return od
 
-def od_dict_igraph(g, od_data_dir, od_file_name, nx_keys = False):
+def od_dict(g, od_data_dir, od_file_name, nx_keys = False):
     '''
     Figure out how much of this function generalizes to work for networkx keys as well,
     would be cool to use the same one for both igraph keys and for Zeyad's networkx keys. 
@@ -74,9 +90,7 @@ def od_dict_igraph(g, od_data_dir, od_file_name, nx_keys = False):
     	df['o'] = df['o'].map(key_lookup.get)
     	df['d'] = df['d'].map(key_lookup.get)
 
-    print df.head()
-
-    Pivot -- makes for an easier dict comprehension
+    # Pivot -- makes for an easier dict comprehension
     od_matrix = df.pivot(index = 'o', columns = 'd', values = 'flow_norm')
     od_matrix[np.isnan(od_matrix)] = 0
     
@@ -84,7 +98,7 @@ def od_dict_igraph(g, od_data_dir, od_file_name, nx_keys = False):
     
     print 'OD dict computed in ' + str((time.clock() - start) / 60.0) + ' m'
 
-    return od_matrix
+    return od
 
 def ITA(g, od, base_cost = 'cost_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4., scale = .25, attrname = 'congested_time_m'):
     vs = g.vs
@@ -103,7 +117,6 @@ def ITA(g, od, base_cost = 'cost_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b 
             if len(ds) > 0:
                 targets = ds.keys()
                 paths = g.get_shortest_paths(o, to=targets, weights=attrname, mode='OUT', output="vpath")
-                # print paths
                 for path in paths:
                     l = len(path)
                     if l > 0:
@@ -117,59 +130,3 @@ def ITA(g, od, base_cost = 'cost_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b 
         for key in edge_dict:
             es[key]['flow'] = edge_dict[key]
             es[key][attrname] = es[key][base_cost] * (1 + a*( es[key]['flow'] / float(es[key]['capacity']))**b)
-
-# -------------------------------
-
-
-def main2():
-	od = read_od()
-	multi = utility.read_multi()
-	od_dict = make_od_dict(multi = multi, od_df = od, layer = 'taz')
-	print len(od_dict)
-	print len(od_dict['taz_5233'])
-
-	nx.set_edge_attributes(multi.G, 'free_flow_time', nx.get_edge_attributes(multi.G, 'cost_time_m'))
-
-	# x = multi.geo_betweenness_ITA(volumeScale = .25, OD = od_dict)
-
-def make_od_dict_nx(multi, od_df, layer = 'taz'):
-
-	G = multi.layers_as_subgraph(layers = [layer])
-
-	taz_nodes = [n for n in G.node]
-	taz = [int(G.node[n]['taz']) for n in G.node]
-	taz_df = pd.DataFrame({'node' : taz_nodes, 'taz' : taz})
-
-	o = [p[0] for p in itertools.product(taz_nodes, taz_nodes)] 
-	d = [p[1] for p in itertools.product(taz_nodes, taz_nodes)]
-	df = pd.DataFrame({'o' : o, 'd' : d})
-
-	df = df.merge(taz_df, left_on = 'o', right_on = 'node')
-	df.rename(columns={'taz': 'o_taz'}, inplace=True)
-	del df['node']
-
-	df = df.merge(taz_df, left_on = 'd', right_on = 'node')
-	df.rename(columns={'taz': 'd_taz'}, inplace=True)
-	del df['node']
-
-	df = df.merge(od_df, left_on = ['o_taz', 'd_taz'], right_on = ['o','d'], how = 'inner')
-	df.rename(columns={'d_x': 'd', 'o_x' : 'o'}, inplace=True)
-	del df['o_y']
-	del df['d_y']
-	df.head()
-
-	taz_nums = df.groupby(['o_taz','d_taz']).size()
-	taz_nums = pd.DataFrame(taz_nums)
-	taz_nums = taz_nums.rename(columns = {0 : 'num'} )
-	df = df.merge(right = taz_nums, left_on = ['o_taz', 'd_taz'], right_index = True, how = 'inner')
-	df['flow_norm'] = df['flow'] / df['num']
-
-	
-	df = df.pivot(index = 'o', columns = 'd', values = 'flow_norm')
-	print df.head()
-	od_dict = {i : {col : df[col][i] for col in df.columns} for i in df.index}
-
-	return od_dict
-
-if __name__ == '__main__':
-	main()
