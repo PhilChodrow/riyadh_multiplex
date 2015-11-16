@@ -40,17 +40,20 @@ def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', n
 	    a networkx.DiGraph() object
 	"""
 	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
-	nodes = nodes.convert_objects(convert_numeric=True)
+	nodes = pd.to_numeric(nodes, errors = 'ignore')
 	
 	N = nx.DiGraph()
 	for n in range(len(nodes)):
 		attr = {nid: nodes[nid][n]}
-		attr2 = {col: nodes[col][n] for col in list(nodes)}
+		# print nodes[nid][n]
+		attr2 = {col: nodes[col][n] for col in list(nodes) if col != nid}
 		attr.update(attr2)
-		N.add_node(nodes[nid][n], attr)
+		
+		N.add_node(n = nodes[nid][n], attr_dict = attr)
 
 	if edges_file_name is not None: 
 		edges = pd.read_table(edges_file_name, sep = sep, index_col=False)
+		edges = pd.to_numeric(edges, errors = 'ignore')
 		for e in range(len(edges)):
 			attr = {eidfrom : edges[eidfrom][e], eidto : edges[eidto][e]}
 			attr2 = {col: edges[col][e] for col in list(edges)}
@@ -259,9 +262,10 @@ def read_metro(directory, file_prefix):
 
 	dists = {(e[0], e[1]) : d(metro.node[e[0]]['pos'], metro.node[e[1]]['pos']) for e in metro.edges_iter()}
 	nx.set_edge_attributes(metro, 'dist_km', dists)
-
+	nx.set_edge_attributes(metro, 'capacity', 100000000000000000000000)
 
 	time_m = {(e[0], e[1]) : metro.edge[e[0]][e[1]]['time_s'] / 60 for e in metro.edges_iter()}
+	nx.set_edge_attributes(metro, 'free_flow_time_m', time_m)
 	nx.set_edge_attributes(metro, 'cost_time_m', time_m)
 	nx.set_edge_attributes(metro, 'weight', time_m)
 
@@ -292,8 +296,8 @@ def read_streets(directory, file_prefix):
 	                       eidto = 'target')
 	print 'constructed graph'
 
-
 	nx.set_edge_attributes(streets, 'weight', nx.get_edge_attributes(streets, 'cost_time_m'))
+	nx.set_edge_attributes(streets, 'free_flow_time_m', nx.get_edge_attributes(streets, 'cost_time_m'))
 	nx.set_edge_attributes(streets, 'dist_km', nx.get_edge_attributes(streets, 'len_km'))
 	pos = {n : (streets.node[n]['st_y'], streets.node[n]['st_x']) for n in streets}	
 	nx.set_node_attributes(streets, 'pos', pos)
@@ -304,6 +308,14 @@ def read_streets(directory, file_prefix):
 	nx.set_edge_attributes(streets, 'layer', 'streets')
 
 	streets.mode = 'streets'
+
+	cap = [streets.edge[e[0]][e[1]]['capacity'] for e in streets.edges_iter()]
+	cap = np.array(cap)
+	mean = cap.mean()
+
+	for e in streets.edges_iter():
+	    if streets.edge[e[0]][e[1]]['capacity'] == 0:
+	        streets.edge[e[0]][e[1]]['capacity'] = mean
 
 	return streets
 
