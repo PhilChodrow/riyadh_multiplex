@@ -40,7 +40,8 @@ def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', n
 	    a networkx.DiGraph() object
 	"""
 	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
-	nodes = pd.to_numeric(nodes, errors = 'ignore')
+	for col in nodes:
+		nodes[col] = nodes[col].convert_objects(convert_numeric = True)
 	
 	N = nx.DiGraph()
 	for n in range(len(nodes)):
@@ -53,7 +54,9 @@ def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', n
 
 	if edges_file_name is not None: 
 		edges = pd.read_table(edges_file_name, sep = sep, index_col=False)
-		edges = pd.to_numeric(edges, errors = 'ignore')
+		for col in edges:
+			edges[col] = edges[col].convert_objects(convert_numeric = True)
+
 		for e in range(len(edges)):
 			attr = {eidfrom : edges[eidfrom][e], eidto : edges[eidto][e]}
 			attr2 = {col: edges[col][e] for col in list(edges)}
@@ -425,8 +428,10 @@ def multiplex_from_txt(**kwargs):
 	"""
 	G = graph_from_txt(**kwargs)
 	pos = {n : (literal_eval(G.node[n]['pos'])) for n in G}
-
 	nx.set_node_attributes(G, 'pos', pos)
+
+	cap = {(e[0], e[1]) : float(G.edge[e[0]][e[1]]['capacity']) for e in G.edges_iter()}
+	nx.set_edge_attributes(G, 'capacity', cap)
 
 	multi = multiplex.multiplex()
 	multi.add_graph(G)
@@ -486,19 +491,18 @@ def idw_smoothed_plot(layer, measure):
 
     plot(x,y,z,grid1)
 
-def read_multi():
+def read_multi(nodes_file_name = '2. multiplex/multiplex_nodes.txt', edges_file_name = '2. multiplex/multiplex_edges.txt', sep = '\t', nid = 'id', eidfrom = 'source', eidto = 'target'):
 	"""A convenience function for easily reading in pipeline's multiplex. 
 	
 	Returns:
 	    multiplex.multiplex(): the pipeline's multiplex from make_multiplex.py
 	"""
-	multi = multiplex_from_txt(nodes_file_name = '2. multiplex/multiplex_nodes.txt',
-	                                   edges_file_name = '2. multiplex/multiplex_edges.txt',
-	                                   sep = '\t',
-	                                   nid = 'id',
-	                                   eidfrom = 'source',
-	                                   eidto = 'target')
-
+	multi = multiplex_from_txt(nodes_file_name = nodes_file_name,
+	                                   edges_file_name = edges_file_name,
+	                                   sep = sep,
+	                                   nid = nid,
+	                                   eidfrom = eidfrom,
+	                                   eidto = eidto)
 	return multi
 
 def check_directory(directory):
