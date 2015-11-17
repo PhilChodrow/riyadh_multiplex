@@ -25,7 +25,54 @@ def main():
 		multi.add_epsilon(weight = 'weight', epsilon = .000001)
 
 		analysis(multi, directory)
-		
+
+def plot2(multi, beta, measure, directory):
+	fig = plt.figure(figsize = (10,12), dpi = 500)	
+	gs = gridspec.GridSpec(2,1, height_ratios = [5,1])
+	a = fig.add_subplot(gs[0])
+	sns.set_style('white')
+	title = 'Riyadh Streets: Betweenness Weighted By ' + measure + '\n' +  r'$\beta =' + str(beta) + '$'
+
+	metro = multi.layers_as_subgraph('metro')
+	streets = multi.layers_as_subgraph('streets')
+
+	streets.size = [streets.node[n][measure] for n in streets.node]
+	metro.position = {n : (metro.node[n]['pos'][1], metro.node[n]['pos'][0]) for n in metro}
+	streets.position = {n : (streets.node[n]['pos'][1], streets.node[n]['pos'][0]) for n in streets}
+
+	nx.draw(streets, streets.position,
+		   edge_color = 'grey', 
+		   edge_size = 0.01,
+		   node_color = streets.size,
+		   cmap = 'jet',
+		   node_size = 10,
+		   alpha = .1,
+		   with_labels = False,
+		   linewidths = 0,
+		   arrows = False,
+		   vmax = 1500000)
+
+	nx.draw(metro, 
+		metro.position,
+		edge_color = '#5A0000',
+		edge_size = 60,
+		node_size = 0,
+		arrows = False,
+		with_labels = False)
+
+	x = np.array([multi.G.node[n][measure] for n in multi.G.node if multi.G.node[n]['layer'] == 'streets'])
+ 	y = np.array([multi.G.node[n][measure] for n in multi.G.node if multi.G.node[n]['layer'] == 'metro'])
+	
+	a = fig.add_subplot(gs[1])
+	sns.kdeplot(x, label = 'street', bw = 5000, color = 'grey')
+	sns.kdeplot(y, label = 'metro', bw = 100000, color = '#5A0000')
+	plt.xlim(0, max(x.max(), y.max()) / 2.0)	
+	# a.set(xscale="log", yscale = "log")
+	sns.despine(left = True)
+
+	plt.title('Betweenness distribution')
+	plt.savefig(directory + '/beta' + str(beta) + '.png')
+
 def plot(multi, beta, measure, directory):
 
 	fig = plt.figure(figsize = (10,12), dpi = 500)
@@ -38,9 +85,7 @@ def plot(multi, beta, measure, directory):
 	                                    layer2 = 'metro', 
 	                                    title = title,
 	                                    measure = measure, 
-	                                    file_name = directory + '/beta' + str(beta) + '.png',
-	                                    vmin = None,
-	                                    vmax = None)
+	                                    file_name = directory + '/beta' + str(beta) + '.png')
 
 	x = np.array([multi.G.node[n][measure] for n in multi.G.node if multi.G.node[n]['layer'] == 'streets'])
 	y = np.array([multi.G.node[n][measure] for n in multi.G.node if multi.G.node[n]['layer'] == 'metro'])
@@ -57,6 +102,7 @@ def plot(multi, beta, measure, directory):
 
 def analysis(multi, directory):
 	betas = [0.05, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1]
+	betas = [1]
 	for beta in betas:
 		measure = str(beta) + 'bc'
 		multi.scale_edge_attribute(layer = 'metro', attribute = 'weight', beta = beta)
