@@ -20,20 +20,9 @@ The `data` directory includes the following data sets
 3. `taz`, comprising `taz_connectors.txt`.  
 
 ## Todo
-1. Coordinate group tasks
-2. Gini coefficient of betweenness centrality (function [here](http://planspace.org/2013/06/21/how-to-calculate-gini-coefficient-from-raw-data-in-python/))
-3. Spatial outreach:
-    1. Definition of metric
-    2. Quantile distribution
-    3. Spatial distribution
-    4. Gini coefficient
-    5. All of the above for varying beta 
-4. Gini coefficient of spatial outreach
-5. Overall betweenness distribution
-6. Segment utility modules: analysis functions, i/o functions, processing functions, etc. 
-7. Pipeline to reproduce Serdar's plots
-8. Validation scripts (who and how?)
-9. Clean plots
+1. Update README.md! 
+2. Incorporate travel-time validation into pipeline
+3. 
 
 
 

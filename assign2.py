@@ -7,44 +7,47 @@ import collections
 import networkx as nx
 
 def main():
-	
-	sub_n = 200
 
-	multi = utility.read_multi()
-	G = multi.layers_as_subgraph(['taz', 'streets'])
+    # sub_n = 100
 
-	print 'converting to igraph format'
-	g = utility.nx_2_igraph(G)
-	
-	print 'computing od_dict for ITA()'
-	start = time.clock()
-	od = od_dict(g, od_data_dir = '1. data/taz_od/', od_file_name = '0_1.txt')
-	
-	sub_keys = od.keys()[:sub_n]
-	sub_od = {k : od[k] for k in sub_keys}
-	
-	print 'running ITA()'
-	ITA(g, od)
-	
-	# grab the new congested times, write them to multi, and save to .txt
-	print 'saving ITA() results to test.py'
-	d = {(g.vs[g.es[i].source]['id'], g.vs[g.es[i].target]['id']) : g.es[i]['congested_time_m'] for i in range(len(g.es))}
-	nx.set_edge_attributes(multi.G, 'congested_time_ITA_m', d)
-	print 'ITA (igraph) completed in ' + str((time.clock() - start) / 60.0) + ' m'
+    multi = utility.read_multi()
+    G = multi.layers_as_subgraph(['taz', 'streets'])
 
-	# start = time.clock()
-	# print 'computing od_dict for geo_betweenness_ITA()'
-	# od = od_dict(g, od_data_dir = '1. data/taz_od/', od_file_name = '0_1.txt', nx_keys = True)
-	# sub_keys = od.keys()[:sub_n]
-	# sub_od = {k : od[k] for k in sub_keys}
+    print 'converting to igraph format'
+    g = utility.nx_2_igraph(G)
 
-	# print 'running geo_betweenness_ITA()'
-	# v, l = multi.geo_betweenness_ITA(volumeScale = .25, OD = sub_od)
-	# print v
-	# nx.set_edge_attributes(multi.G, 'congested_time_geo_m', v)
-	# print 'geo_betweenness_ITA() completed in in ' + str((time.clock() - start) / 60.0) + ' m'
-	
-	multi.to_txt('2. multiplex', 'test')
+    # igraph method	
+
+    print 'computing od_dict for ITA()'
+    start = time.clock()
+    od = od_dict(g, od_data_dir = '1. data/taz_od/', od_file_name = '0_1.txt')
+    
+    print 'running ITA()'
+    ITA(g, od)
+
+    # grab the new congested times, write them to multi, and save to .txt
+
+    d = {(g.vs[g.es[i].source]['id'], g.vs[g.es[i].target]['id']) : g.es[i]['congested_time_m'] for i in range(len(g.es))}
+    f = {(g.vs[g.es[i].source]['id'], g.vs[g.es[i].target]['id']) : g.es[i]['flow'] for i in range(len(g.es))}
+    nx.set_edge_attributes(multi.G, 'congested_time_ITA2_m', d)
+    nx.set_edge_attributes(multi.G, 'flow', f)
+
+    print 'ITA (igraph) completed in ' + str((time.clock() - start) / 60.0) + ' m'
+
+    homebrew method
+    print 'computing od_dict for geo_betweenness_ITA()'
+
+    start = time.clock()
+    od = od_dict(g, od_data_dir = '1. data/taz_od/', od_file_name = '0_1.txt', nx_keys = True)
+   
+    print 'running geo_betweenness_ITA()'
+    v, l = multi.geo_betweenness_ITA(volumeScale = .25, OD = od)
+
+    # nx.set_edge_attributes(multi.G, 'congested_time_geo_m', v)
+    print 'geo_betweenness_ITA() completed in in ' + str((time.clock() - start) / 60.0) + ' m'
+
+    print 'saving to comparison files'
+    multi.to_txt('2. multiplex', 'comparison')
 
 def read_od(data_dir, file_name):
     print 'reading OD data'
@@ -100,7 +103,7 @@ def od_dict(g, od_data_dir, od_file_name, nx_keys = False):
 
     return od
 
-def ITA(g, od, base_cost = 'cost_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4., scale = .25, attrname = 'congested_time_m'):
+def ITA(g, od, base_cost = 'free_flow_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4., scale = .25, attrname = 'congested_time_m'):
     vs = g.vs
     es = g.es
     
@@ -110,7 +113,34 @@ def ITA(g, od, base_cost = 'cost_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b 
     
     edge_dict = collections.defaultdict(int)
     for p in P:
-    	start = time.clock()
+        start = time.clock()
+        print 'assigning for p = ' + str(p)
+        for o in od:
+            ds = od[o]
+            if len(ds) > 0:
+                targets = ds.keys()
+                paths = g.get_shortest_paths(o, to=targets, weights=attrname, mode='OUT', output="epath")
+                for i in range(len(targets)):
+                    flow = od[o][targets[i]]
+                    for e in paths[i]:
+                        edge_dict[e] += p * scale * flow
+
+        print 'assignment for p = ' + str(p) + ' completed in ' + str((time.clock() - start) / 60.0) + 'm'
+        for key in edge_dict:
+            es[key]['flow'] = edge_dict[key]
+            es[key][attrname] = es[key][base_cost] * (1 + a*( es[key]['flow'] / float(es[key]['capacity']))**b)
+
+def ITA_slower(g, od, base_cost = 'free_flow_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4., scale = .25, attrname = 'congested_time_m'):
+    vs = g.vs
+    es = g.es
+    
+    vs['flow'] = 0
+    es['flow'] = 0
+    es[attrname] = list(es[base_cost])
+    
+    edge_dict = collections.defaultdict(int)
+    for p in P:
+        start = time.clock()
         print 'assigning for p = ' + str(p)
         for o in od:
             ds = od[o]
@@ -130,3 +160,6 @@ def ITA(g, od, base_cost = 'cost_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b 
         for key in edge_dict:
             es[key]['flow'] = edge_dict[key]
             es[key][attrname] = es[key][base_cost] * (1 + a*( es[key]['flow'] / float(es[key]['capacity']))**b)
+
+if __name__ == "__main__":
+    main()
