@@ -737,7 +737,7 @@ class multiplex:
 	        print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
 	        return volume
 
-	def geo_betweenness_ITA(self, volumeScale, OD = None, pathOD = None, P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4., layer = 'streets', base_cost = 'cost_time_m'):
+	def geo_betweenness_ITA(self, volumeScale, OD = None, pathOD = None, P = (0.4, 0.3, 0.2, 0.1), a = 0.15, b = 4., layer = 'streets', base_cost = 'free_flow_time_m', attrname = 'congested_time_m'):
 	        '''
 	        Calculates the betweenness of the multiplex network using the minimum-weight shortest path (volumes can be weighted by OD flows)
 	        This method updates travel times for congestion by using the BPR function and ITA to iteratively update the time cost of edges
@@ -758,27 +758,27 @@ class multiplex:
 	        lengths = [ {}, {} ]
 	        start = clock()
 	        if OD == None: OD = { n: { n2: 1 for n2 in self.G.node if n != n2 } for n in self.G.node }
-	        for e1,e2 in self.G.edges():
-	            if self.G.edge[e1][e2]['layer'] == 'D': self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']
+	        for e1,e2 in self.G.edges(): # set congested flow equal to free flow at base calculation
+	        	self.G.edge[e1][e2][attrname] = self.G.edge[e1][e2][base_cost]
 	        if pathOD != None:
 	            print "Calculating free flow travel times"
 	            for origin in pathOD:
-	                lengths[0][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
+	                lengths[0][origin] = self.multi_dijkstra_length(origin, base_cost, pathOD)
 	        for p in P:
 	            print "Starting traffic assignment for p =", p
 	            stdout.flush()
 	            for origin in OD:
-	                volume0 = self.multi_dijkstra(origin, 'cost_time_m', OD)
+	                volume0 = self.multi_dijkstra(origin, attrname, OD)
 	                for v in volume0: 
 	                    if v in volume: volume[v] += p*volume0[v]*volumeScale
 	                    else: volume[v] = p*volume0[v]*volumeScale
 	            for e1,e2 in volume: 
 	                if self.G.edge[e1][e2]['layer'] == layer: 
-	                    self.G.edge[e1][e2]['cost_time_m'] = self.G.edge[e1][e2]['free_flow_time']*( 1. + a*( (volume[(e1,e2)]/self.G.edge[e1][e2]['capacity'])**b ) )
+	                    self.G.edge[e1][e2][attrname] = self.G.edge[e1][e2][base_cost]*( 1. + a*( (volume[(e1,e2)]/self.G.edge[e1][e2]['capacity'])**b ) )
 	        if pathOD != None:
 	            print "Calculating congested travel times"
 	            for origin in pathOD:
-	                lengths[1][origin] = self.multi_dijkstra_length(origin, 'cost_time_m', pathOD)
+	                lengths[1][origin] = self.multi_dijkstra_length(origin, attrname, pathOD)
 	        total = clock() - start
 	        ODL = sum( [ len(OD[o]) for o in OD ] )
 	        print "Time to calculate", ODL, "routes:", total, "(", total/ODL, ")"
