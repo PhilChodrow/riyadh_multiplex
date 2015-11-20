@@ -102,7 +102,7 @@ def write_nx_nodes(N, directory, file_name):
 
 	nodes.close()
 
-def nodes_2_df(N):
+def nodes_2_df(N, col_names = ['layer', 'lon', 'lat']):
 	"""
 	Convert the nodes of a networkx.DiGraph() object into a pandas.DataFrame
 
@@ -112,9 +112,10 @@ def nodes_2_df(N):
 	Returns: 
 		a pandas.DataFrame with node attributes as columns
 	"""
-	col_names = set([])
-	for n in N.node:
-		col_names = col_names.union(N.node[n].keys())
+	if col_names == None:
+		col_names = set([])
+		for n in N.node:
+			col_names = col_names.union(N.node[n].keys())
 
 	d = {}
 	for col in col_names: 
@@ -532,5 +533,34 @@ def gini_coeff(x):
 	s = x.sum()
 	r = np.argsort(np.argsort(-x)) # calculates zero-based ranks
 	return 1 - (2.0 * (r*x).sum() + s)/(n*s)
+
+def spatial_plot(G, attr, ax, title = 'plot!'):
+	from scipy.interpolate import griddata
+	import scipy.ndimage as ndimage
+	
+    cols = ['layer', 'lon', 'lat', attr]
+    df = utility.nodes_2_df(G, cols)
+    
+    grid_x, grid_y = np.mgrid[df.lon.min():df.lon.max():2000j, 
+                              df.lat.min():df.lat.max():2000j]
+    
+    p = np.array([[df['lon'][i], df['lat'][i]] for i in df.index])
+    z = np.array([df[attr][i] for i in df.index])
+    
+    zj = griddata(p, z, (grid_x, grid_y), method='linear', fill_value = 0)
+    zi = ndimage.gaussian_filter(zj, sigma=10.0, order=0)
+    
+    G.position = {n : (G.node[n]['lon'], G.node[n]['lat']) for n in G}
+    
+    ax.contourf(grid_x, grid_y, zi, 50, linewidths=0.1, cmap=plt.get_cmap('afmhot'), alpha = 1)
+    nx.draw(G, G.position,
+		   edge_color = 'white', 
+		   edge_size = 0.01,
+		   node_color = 'white',
+		   node_size = 0,
+		   alpha = .15,
+		   with_labels = False,
+		   arrows = False)
+    plt.title(title)
 
 
