@@ -23,7 +23,7 @@ def d(pos1,pos2):
 	"""
 	LAT_DIST = 110766.95237186992 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
 	LON_DIST = 101274.42720366278 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
-	return math.sqrt((LAT_DIST*(pos1[0]- pos2[0]))**2 + (LON_DIST*(pos1[1] - pos2[1]))**2)
+	return math.sqrt((LON_DIST*(pos1[0]- pos2[0]))**2 + (LAT_DIST*(pos1[1] - pos2[1]))**2)
 
 def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', nid = None, eidfrom = None, eidto = None):
 	"""Summary
@@ -200,13 +200,14 @@ def find_nearest(n, N1, N2):
 	
 	Args:
 	    n (str): the node from which to start
-	    N1 (networkx.DiGraph()): the network in which n lies. Must have a 'pos' attribute.
-	    N2 (networkx.DiGraph()): the network in which to find the node nearest to N1. Must have a 'pos' attribute. 
+	    N1 (networkx.DiGraph()): the network in which n lies. 
+	    N2 (networkx.DiGraph()): the network in which to find the node nearest to N1.  
 	
 	Returns:
 	    str, int: the nearest neighbor in N2 and the distance to that neighbor
 	"""
-	dists = {m: d(N1.node[n]['pos'], N2.node[m]['pos']) for m in N2}
+
+	dists = {m: d( (N1.node[n]['lon'], N1.node[n]['lat']), (N2.node[m]['lon'], N2.node[m]['lat']) ) for m in N2}
 	nearest = min(dists, key=dists.get)
 	nearest_dist = dists[nearest]
 	return nearest, nearest_dist
@@ -260,10 +261,9 @@ def read_metro(directory, file_prefix):
 	rename_node_attribute(metro, old = 'Longitude', new = 'lon')
 	rename_edge_attribute(metro, old = 'Time (s)', new = 'time_s')
 	
-	pos = {n : (metro.node[n]['lat'], metro.node[n]['lon']) for n in metro}
-	nx.set_node_attributes(metro, 'pos', pos)
+	dists = {(e[0], e[1]) : d((metro.node[e[0]]['lat'],metro.node[e[0]]['lon']) , 
+	                          (metro.node[e[1]]['lat'],metro.node[e[1]]['lon'])) for e in metro.edges_iter()}
 
-	dists = {(e[0], e[1]) : d(metro.node[e[0]]['pos'], metro.node[e[1]]['pos']) for e in metro.edges_iter()}
 	nx.set_edge_attributes(metro, 'dist_km', dists)
 	nx.set_edge_attributes(metro, 'capacity', 100000000000000000000000)
 
@@ -302,8 +302,9 @@ def read_streets(directory, file_prefix):
 	nx.set_edge_attributes(streets, 'weight', nx.get_edge_attributes(streets, 'cost_time_m'))
 	nx.set_edge_attributes(streets, 'free_flow_time_m', nx.get_edge_attributes(streets, 'cost_time_m'))
 	nx.set_edge_attributes(streets, 'dist_km', nx.get_edge_attributes(streets, 'len_km'))
-	pos = {n : (streets.node[n]['st_y'], streets.node[n]['st_x']) for n in streets}	
-	nx.set_node_attributes(streets, 'pos', pos)
+	
+	rename_node_attribute(streets, old = 'st_x', new = 'lon')
+	rename_node_attribute(streets, old = 'st_y', new = 'lat')
 
 	print str(len(streets.nodes())) + ' nodes added to street network'
 	print str(len(streets.edges())) + ' edges added to street network.'
@@ -427,8 +428,7 @@ def multiplex_from_txt(**kwargs):
 	    multiplex.multiplex(): a multiplex object with appropriate attributes, etc. 
 	"""
 	G = graph_from_txt(**kwargs)
-	pos = {n : (literal_eval(G.node[n]['pos'])) for n in G}
-	nx.set_node_attributes(G, 'pos', pos)
+	
 
 	cap = {(e[0], e[1]) : float(G.edge[e[0]][e[1]]['capacity']) for e in G.edges_iter()}
 	nx.set_edge_attributes(G, 'capacity', cap)
@@ -472,7 +472,7 @@ def plot(x,y,z,grid):
     plt.hold(True)
     # plt.colorbar()
 
-def idw_smoothed_plot(layer, measure):
+def idw_smoothed_plot(layer, measure): # broken after removing pos attributes
     N = multi.layers_as_subgraph([layer])
 
     x = np.array([N.node[n]['pos'][1] for n in N.node])

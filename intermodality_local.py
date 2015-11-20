@@ -94,8 +94,8 @@ def plot(multi, file_name, title):
 	metro = multi.layers_as_subgraph('metro')
 	streets = multi.layers_as_subgraph('streets')
 
-	x = np.array([taz.node[n]['pos'][1] for n in taz.node])
-	y = np.array([- taz.node[n]['pos'][0] for n in taz.node])
+	x = np.array([taz.node[n]['lon'] for n in taz.node])
+	y = np.array([- taz.node[n]['lat'] for n in taz.node])
 	z = np.array([float(taz.node[n]['intermodality']) for n in taz.node])
 	print x.min(), x.max()
 	print y.min(), y.max()

@@ -19,9 +19,7 @@ def main():
 	taz = utility.graph_from_txt(nodes_file_name = taz_dir + taz_file,
 	                             nid = 'id',
 	                             sep = '\t')
-	pos = {n : (taz.node[n]['lat'], taz.node[n]['lon']) for n in taz}
-	nx.set_node_attributes(taz, 'pos', pos)
-
+	
 	print 'Reading metro network.'
 	metro = utility.read_metro(directory = metro_dir, file_prefix = metro_prefix) # networkx graph
 

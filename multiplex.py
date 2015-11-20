@@ -300,7 +300,7 @@ class multiplex:
 		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.layers_as_subgraph([layer]).edges_iter()}
 		nx.set_edge_attributes(self.G, attribute, d)
 
-	def spatial_plot_interpolated(self, layer1, layer2, measure, title, file_name, show = False):
+	def spatial_plot_interpolated(self, layer1, layer2, measure, title, file_name, show = False): # broken after removing pos attributes
 		""" Create an interpolated plot of a spatially-distributed measure.
 		
 		Args:
@@ -373,7 +373,7 @@ class multiplex:
 		N = self.layers_as_subgraph([layer1])
 		M = self.layers_as_subgraph([layer2])
 
-		N.position = {n : (N.node[n]['pos'][1], N.node[n]['pos'][0]) for n in N}
+		N.position = {n : (N.node[n]['lon'], N.node[n]['lat']) for n in N}
 		N.size = [float(N.node[n][measure]) / 20000 for n in N]
 
 		nx.draw(N,N.position,
@@ -386,7 +386,7 @@ class multiplex:
 			with_labels=False,
 			arrows = False)
 
-		M.position = {m : (M.node[m]['pos'][1], M.node[m]['pos'][0]) for m in M}
+		M.position = {m : (M.node[m]['lon'], M.node[m]['lat']) for m in M}
 		nx.draw(M, 
 			M.position,
 			edge_color = '#5A0000',
@@ -520,7 +520,7 @@ class multiplex:
 		print 'converting to igraph'
 		g = utility.nx_2_igraph(self.G)
 		nodes = g.vs.select(lambda vertex: vertex['layer'] == layer)['name']
-		pos = {v['name'] : v['pos'] for v in g.vs.select(lambda v: v['name'] in nodes)}
+		pos = {v['name'] : (v['lon'], v['lat']) for v in g.vs.select(lambda v: v['name'] in nodes)}
 		print 'computing distance matrix, this could take a while'
 		d = distance_matrix(nodes, weight)
 		print 'computing outreach'

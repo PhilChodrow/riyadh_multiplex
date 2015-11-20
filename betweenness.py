@@ -37,8 +37,8 @@ def plot2(multi, beta, measure, directory):
 	streets = multi.layers_as_subgraph('streets')
 
 	streets.size = [streets.node[n][measure] for n in streets.node]
-	metro.position = {n : (metro.node[n]['pos'][1], metro.node[n]['pos'][0]) for n in metro}
-	streets.position = {n : (streets.node[n]['pos'][1], streets.node[n]['pos'][0]) for n in streets}
+	metro.position = {n : (metro.node[n]['lon'], metro.node[n]['lat']) for n in metro}
+	streets.position = {n : (streets.node[n]['lon'], streets.node[n]['lat']) for n in streets}
 
 	nx.draw(streets, streets.position,
 		   edge_color = 'grey', 

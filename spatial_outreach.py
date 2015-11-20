@@ -99,9 +99,9 @@ def map_plot(multi, measure, vmin, vmax, cost):
    
 	taz.weight= [taz.node[n][measure] for n in taz.node]
 	
-	taz.position = {n : (taz.node[n]['pos'][1], taz.node[n]['pos'][0]) for n in taz}
-	metro.position = {n : (metro.node[n]['pos'][1], metro.node[n]['pos'][0]) for n in metro}
-	streets.position = {n : (streets.node[n]['pos'][1], streets.node[n]['pos'][0]) for n in streets}
+	taz.position = {n : (taz.node[n]['lon'], taz.node[n]['lat']) for n in taz}
+	metro.position = {n : (metro.node[n]['lon'], metro.node[n]['lat']) for n in metro}
+	streets.position = {n : (streets.node[n]['lon'], streets.node[n]['lat']) for n in streets}
 
 	gini = utility.gini_coeff(np.array(taz.weight))
 

@@ -251,7 +251,7 @@ def multiplex_comparison(pathLengths, pathLengths2):
 
 def plot_volume(multi, volume):
     pos = {}
-    for n in multi.G.node: pos[n] = multi.G.node[n]['pos']
+    for n in multi.G.node: pos[n] = (multi.G.node[n]['lon'],multi.G.node[n]['lat']) 
     for e1,e2 in volume:
         if multi.G.edge[e1][e2]['layer'] == 'D':
             color = 'red' if volume[(e1,e2)] > 2500 else 'orange' if volume[(e1,e2)] > 1750 else 'yellow' if volume[(e1,e2)] > 1000 else 'lightgreen' if volume[(e1,e2)] > 500 else 'green'
@@ -266,7 +266,7 @@ def plot_volume(multi, volume):
 
 def plot_voc(multi, volume):
     pos = {}
-    for n in multi.G.node: pos[n] = multi.G.node[n]['pos']
+    for n in multi.G.node: pos[n] = (multi.G.node[n]['lon'],multi.G.node[n]['lat'])
     for e1,e2 in volume:
         if multi.G.edge[e1][e2]['layer'] == 'D':
             color = 'red' if volume[(e1,e2)]/multi.G.edge[e1][e2]['capacity'] > 1. else 'orange' if volume[(e1,e2)]/multi.G.edge[e1][e2]['capacity'] > 0.75 else 'yellow' if volume[(e1,e2)]/multi.G.edge[e1][e2]['capacity'] > 0.5 else 'lightgreen' if volume[(e1,e2)]/multi.G.edge[e1][e2]['capacity'] > 0.25 else 'green'
