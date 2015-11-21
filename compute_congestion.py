@@ -95,7 +95,7 @@ def ITA(g, od, base_cost = 'free_flow_time_m', P = (0.4, 0.3, 0.2, 0.1), a = 0.1
     es = g.es
     
     # initialize graph attributes for collecting later
-    vs['flow'] = 0
+
     es['flow'] = 0
     es[attrname] = list(es[base_cost])
     

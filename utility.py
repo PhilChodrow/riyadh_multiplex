@@ -535,8 +535,10 @@ def gini_coeff(x):
 	return 1 - (2.0 * (r*x).sum() + s)/(n*s)
 
 def spatial_plot(G, attr, ax, title = 'plot!'):
+	import scipy.ndimage as ndimage
+
 	cols = ['layer', 'lon', 'lat', attr]
-	df = utility.nodes_2_df(G, cols)
+	df = nodes_2_df(G, cols)
 
 	n = 2000
 	grid_x, grid_y = np.mgrid[df.lon.min():df.lon.max():n * 1j, 
@@ -553,8 +555,10 @@ def spatial_plot(G, attr, ax, title = 'plot!'):
 		y = int((df.loc[i]['lat'] - latmin) / (latmax - latmin)*n) - 1 
 		zj[x][y] += df.loc[i][attr]
 		
-	zi = ndimage.gaussian_filter(zj, sigma=10.0, order=0)
+	zi = ndimage.gaussian_filter(zj, sigma=12.0, order=0)
 	ax.contourf(grid_x, grid_y, zi, 100, linewidths=0.1, cmap=plt.get_cmap('afmhot'), alpha = 1, vmax = 1./1. * zi.max())
+	
+	G.position = {n : (G.node[n]['lon'], G.node[n]['lat']) for n in G}
 	nx.draw(G, G.position,
 			edge_color = 'white', 
 			edge_size = 0.01,
