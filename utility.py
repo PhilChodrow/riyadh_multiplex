@@ -15,11 +15,11 @@ def d(pos1,pos2):
 	"""Compute geographical distance between two points
 	
 	Args:
-	    pos1 (tuple): a tuple of the form (lat, lon)
-	    pos2 (tuple): a tuple of the form (lat, lon)
+		pos1 (tuple): a tuple of the form (lat, lon)
+		pos2 (tuple): a tuple of the form (lat, lon)
 	
 	Returns:
-	    float: the geographical distance between points, in kilometers
+		float: the geographical distance between points, in kilometers
 	"""
 	LAT_DIST = 110766.95237186992 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
 	LON_DIST = 101274.42720366278 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
@@ -29,15 +29,15 @@ def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', n
 	"""Summary
 	
 	Args:
-	    nodes_file_name (str, optional): the file in which to find node ids and attributes
-	    edges_file_name (str, optional): the file in which to find edge ids and attributes
-	    sep (str, optional): the separator character used in the node and edge files
-	    nid (str, optional): the hashable attribute used to identify nodes
-	    eidfrom (str, optional): the hashable attribute used to identify sources of edges (must match nid)
-	    eidto (str, optional): the hashable attribute used to identify targets of edges (must match nid)
+		nodes_file_name (str, optional): the file in which to find node ids and attributes
+		edges_file_name (str, optional): the file in which to find edge ids and attributes
+		sep (str, optional): the separator character used in the node and edge files
+		nid (str, optional): the hashable attribute used to identify nodes
+		eidfrom (str, optional): the hashable attribute used to identify sources of edges (must match nid)
+		eidto (str, optional): the hashable attribute used to identify targets of edges (must match nid)
 	
 	Returns:
-	    a networkx.DiGraph() object
+		a networkx.DiGraph() object
 	"""
 	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
 	for col in nodes:
@@ -69,9 +69,9 @@ def write_nx_nodes(N, directory, file_name):
 	'''
 	Write the nodes of a networkx.DiGraph() object to a .txt file
 	Args:
-	    N (networkx.DiGraph()): the graph to write
-	    directory (str): the directory in which to save the file
-	    file_name (str): the name under which to save the file
+		N (networkx.DiGraph()): the graph to write
+		directory (str): the directory in which to save the file
+		file_name (str): the name under which to save the file
 	'''
 	col_names = set([])
 	for n in N.node:
@@ -107,7 +107,7 @@ def nodes_2_df(N, col_names = ['layer', 'lon', 'lat']):
 	Convert the nodes of a networkx.DiGraph() object into a pandas.DataFrame
 
 	Args:
-	    N (networkx.DiGraph()): the graph to convert
+		N (networkx.DiGraph()): the graph to convert
 
 	Returns: 
 		a pandas.DataFrame with node attributes as columns
@@ -129,12 +129,12 @@ def write_nx_edges(N, directory, file_name):
 	"""Write the edges of a networkx.DiGraph() object to a .txt file.
 	
 	Args:
-	    N (networkx.DiGraph()): the networkx.DiGraph() object to write
-	    directory (str): The directory in which to save the file
-	    file_name (str): the name of the file
+		N (networkx.DiGraph()): the networkx.DiGraph() object to write
+		directory (str): The directory in which to save the file
+		file_name (str): the name of the file
 	
 	Returns:
-	    None
+		None
 	"""
 	col_names = set([])
 	for e in N.edges_iter():
@@ -169,12 +169,12 @@ def rename_node_attribute(N, old, new):
 	""" rename a node attribute in a networkx.DiGraph() object. 
 	
 	Args:
-	    N (networkx.DiGraph()): the networkx.DiGraph() containing an attribute to rename
-	    old (str): the old name of the attribute
-	    new (str): the new name of the attribute
+		N (networkx.DiGraph()): the networkx.DiGraph() containing an attribute to rename
+		old (str): the old name of the attribute
+		new (str): the new name of the attribute
 	
 	Returns:
-	    None
+		None
 	"""
 	nx.set_node_attributes(N, new, nx.get_node_attributes(N, old))
 
@@ -185,12 +185,12 @@ def rename_edge_attribute(N, old, new):
 	"""rename an edge attribute in a networkx.DiGraph() object
 	
 	Args:
-	    N (networkx.DiGraph()): the networkx.DiGraph() object containing the edge attribute to rename
-	    old (str): the old name of the edge attribute
-	    new (str): the new name of the edge attribute
+		N (networkx.DiGraph()): the networkx.DiGraph() object containing the edge attribute to rename
+		old (str): the old name of the edge attribute
+		new (str): the new name of the edge attribute
 	
 	Returns:
-	    None
+		None
 	"""
 	nx.set_edge_attributes(N, new, nx.get_edge_attributes(N, old))
 	for e in N.edges_iter():
@@ -200,12 +200,12 @@ def find_nearest(n, N1, N2):
 	"""for a fixed node n in network N1, find th nearest node in network N2
 	
 	Args:
-	    n (str): the node from which to start
-	    N1 (networkx.DiGraph()): the network in which n lies. 
-	    N2 (networkx.DiGraph()): the network in which to find the node nearest to N1.  
+		n (str): the node from which to start
+		N1 (networkx.DiGraph()): the network in which n lies. 
+		N2 (networkx.DiGraph()): the network in which to find the node nearest to N1.  
 	
 	Returns:
-	    str, int: the nearest neighbor in N2 and the distance to that neighbor
+		str, int: the nearest neighbor in N2 and the distance to that neighbor
 	"""
 
 	dists = {m: d( (N1.node[n]['lon'], N1.node[n]['lat']), (N2.node[m]['lon'], N2.node[m]['lat']) ) for m in N2}
@@ -217,12 +217,12 @@ def spatial_multiplex_join(N1, N2, TRANSFER_SPEED):
 	"""join nodes in N1 to their nearest neighbors in N2
 	
 	Args:
-	    N1 (networkx.DiGraph()): the network from which to search for nearest neighbors
-	    N2 (networkx.DiGraph()): the network in which to search for nearest neighbors
-	    TRANSFER_SPEED (float): the speed at which transfers are assumed traversed, in km/m
+		N1 (networkx.DiGraph()): the network from which to search for nearest neighbors
+		N2 (networkx.DiGraph()): the network in which to search for nearest neighbors
+		TRANSFER_SPEED (float): the speed at which transfers are assumed traversed, in km/m
 	
 	Returns:
-	    networkx.DiGraph(): a graph including N1, N2, and the new links between them. 
+		networkx.DiGraph(): a graph including N1, N2, and the new links between them. 
 	"""
 	multiplex = nx.disjoint_union(N1, N2)
 
@@ -245,25 +245,25 @@ def read_metro(directory, file_prefix):
 	"""convenience function to quickly read in and clean the metro network
 	
 	Args:
-	    directory (str): the location in which to find the node and edge files
-	    file_prefix (TYPE): the prefix of the node and edge files
+		directory (str): the location in which to find the node and edge files
+		file_prefix (TYPE): the prefix of the node and edge files
 	
 	Returns:
-	    networkx.DiGraph(): the metro network
+		networkx.DiGraph(): the metro network
 	"""
 	metro = graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
-	                       edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
-	                       sep = '\t', 
-	                       nid = 'Station', 
-	                       eidfrom = 'From', 
-	                       eidto = 'To')
+						   edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
+						   sep = '\t', 
+						   nid = 'Station', 
+						   eidfrom = 'From', 
+						   eidto = 'To')
 
 	rename_node_attribute(metro, old = 'Latitude', new = 'lat')
 	rename_node_attribute(metro, old = 'Longitude', new = 'lon')
 	rename_edge_attribute(metro, old = 'Time (s)', new = 'time_s')
 	
 	dists = {(e[0], e[1]) : d((metro.node[e[0]]['lat'],metro.node[e[0]]['lon']) , 
-	                          (metro.node[e[1]]['lat'],metro.node[e[1]]['lon'])) for e in metro.edges_iter()}
+							  (metro.node[e[1]]['lat'],metro.node[e[1]]['lon'])) for e in metro.edges_iter()}
 
 	nx.set_edge_attributes(metro, 'dist_km', dists)
 	nx.set_edge_attributes(metro, 'capacity', 100000000000000000000000)
@@ -286,18 +286,18 @@ def read_streets(directory, file_prefix):
 	"""convenience function to quickly read in the street network 
 	
 	Args:
-	    directory (str): the directory in which to find the street network node and edge files
-	    file_prefix (str): the file prefix of the node and edge files
+		directory (str): the directory in which to find the street network node and edge files
+		file_prefix (str): the file prefix of the node and edge files
 	
 	Returns:
-	    networkx.DiGraph(): the street network. 
+		networkx.DiGraph(): the street network. 
 	"""
 	streets = graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
-	                       edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
-	                       sep = ' ', 
-	                       nid = 'id', 
-	                       eidfrom = 'source', 
-	                       eidto = 'target')
+						   edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
+						   sep = ' ', 
+						   nid = 'id', 
+						   eidfrom = 'source', 
+						   eidto = 'target')
 	print 'constructed graph'
 
 	nx.set_edge_attributes(streets, 'weight', nx.get_edge_attributes(streets, 'cost_time_m'))
@@ -319,8 +319,8 @@ def read_streets(directory, file_prefix):
 	mean = cap.mean()
 
 	for e in streets.edges_iter():
-	    if streets.edge[e[0]][e[1]]['capacity'] == 0:
-	        streets.edge[e[0]][e[1]]['capacity'] = mean
+		if streets.edge[e[0]][e[1]]['capacity'] == 0:
+			streets.edge[e[0]][e[1]]['capacity'] = mean
 
 	return streets
 
@@ -375,10 +375,10 @@ def nx_2_igraph(graph):
 	"""convert a networkx.DiGraph() object into an igraph.Graph() object. 
 	
 	Args:
-	    graph (networkx.DiGraph()): the network to convert
+		graph (networkx.DiGraph()): the network to convert
 	
 	Returns:
-	    igraph.Graph(): the converted network in igraph format
+		igraph.Graph(): the converted network in igraph format
 	"""
 	ig_graph = ig.Graph()
 	ig_graph = ig_graph.as_directed(mutual = False)
@@ -402,10 +402,10 @@ def igraph_2_nx(ig_graph):
 	"""convert an igraph.Graph() object into a networkx.DiGraph() object
 	
 	Args:
-	    ig_graph (igraph.Graph()): the graph to convert
+		ig_graph (igraph.Graph()): the graph to convert
 	
 	Returns:
-	    networkx.DiGraph(): the converted graph
+		networkx.DiGraph(): the converted graph
 	"""
 	print 'Converting to networkx format'
 	nx_graph = nx.DiGraph()
@@ -423,10 +423,10 @@ def multiplex_from_txt(**kwargs):
 	"""Convenience function to quickly read a multiplex object from a pair of node and edge files. 
 	
 	Args:
-	    **kwargs: kwargs passed down to utility.graph_from_txt()
+		**kwargs: kwargs passed down to utility.graph_from_txt()
 	
 	Returns:
-	    multiplex.multiplex(): a multiplex object with appropriate attributes, etc. 
+		multiplex.multiplex(): a multiplex object with appropriate attributes, etc. 
 	"""
 	G = graph_from_txt(**kwargs)
 	
@@ -440,80 +440,80 @@ def multiplex_from_txt(**kwargs):
 	return multi
 
 def distance_matrix(x0, y0, x1, y1):
-    obs = np.vstack((x0, y0)).T
-    interp = np.vstack((x1, y1)).T
+	obs = np.vstack((x0, y0)).T
+	interp = np.vstack((x1, y1)).T
 
-    # Make a distance matrix between pairwise observations
+	# Make a distance matrix between pairwise observations
 
-    d0 = np.subtract.outer(obs[:,0], interp[:,0])
-    d1 = np.subtract.outer(obs[:,1], interp[:,1])
+	d0 = np.subtract.outer(obs[:,0], interp[:,0])
+	d1 = np.subtract.outer(obs[:,1], interp[:,1])
 
-    return np.hypot(d0, d1)
+	return np.hypot(d0, d1)
 
 def simple_idw(x, y, z, xi, yi, threshhold):
-    dist = distance_matrix(x,y, xi,yi)
+	dist = distance_matrix(x,y, xi,yi)
 
-    # In IDW, weights are 1 / distance
-    weights = 1.0 / dist**.5
+	# In IDW, weights are 1 / distance
+	weights = 1.0 / dist**.5
 
-    # Make weights sum to one
-    weights /= weights.sum(axis=0)
+	# Make weights sum to one
+	weights /= weights.sum(axis=0)
 
-    # Multiply the weights for each interpolated point by all observed Z-values
-    zi = np.dot(weights.T, z)
-    # gap = zi[dist.min(axis = 0) > threshhold].max()
-    # zi[dist.min(axis = 0) > threshhold] = 0
-    # zi = zi - gap
-    # zi[zi < 0] = 0
-    return zi
+	# Multiply the weights for each interpolated point by all observed Z-values
+	zi = np.dot(weights.T, z)
+	# gap = zi[dist.min(axis = 0) > threshhold].max()
+	# zi[dist.min(axis = 0) > threshhold] = 0
+	# zi = zi - gap
+	# zi[zi < 0] = 0
+	return zi
 
 def plot(x,y,z,grid):
-    # plt.figure(figsize = (15,15), dpi = 500)
-    plt.imshow(grid, extent=(x.min(), x.max(), y.max(), y.min()), cmap=cm.Blues)
-    plt.hold(True)
-    # plt.colorbar()
+	# plt.figure(figsize = (15,15), dpi = 500)
+	plt.imshow(grid, extent=(x.min(), x.max(), y.max(), y.min()), cmap=cm.Blues)
+	plt.hold(True)
+	# plt.colorbar()
 
 def idw_smoothed_plot(layer, measure): # broken after removing pos attributes
-    N = multi.layers_as_subgraph([layer])
+	N = multi.layers_as_subgraph([layer])
 
-    x = np.array([N.node[n]['pos'][1] for n in N.node])
-    y = np.array([- N.node[n]['pos'][0] for n in N.node])
-    z = np.array([float(N.node[n][measure]) for n in N.node])
+	x = np.array([N.node[n]['pos'][1] for n in N.node])
+	y = np.array([- N.node[n]['pos'][0] for n in N.node])
+	z = np.array([float(N.node[n][measure]) for n in N.node])
 
-    mx, my = 100, 100
-    xi = np.linspace(x.min(), x.max(), mx)
-    yi = np.linspace(y.min(), y.max(), my)
+	mx, my = 100, 100
+	xi = np.linspace(x.min(), x.max(), mx)
+	yi = np.linspace(y.min(), y.max(), my)
 
-    xi, yi = np.meshgrid(xi, yi)
-    xi, yi = xi.flatten(), yi.flatten()
+	xi, yi = np.meshgrid(xi, yi)
+	xi, yi = xi.flatten(), yi.flatten()
 
-    grid1 = simple_idw(x,y,z,xi,yi, threshhold = .2)
-    grid1 = grid1.reshape((my, mx))
+	grid1 = simple_idw(x,y,z,xi,yi, threshhold = .2)
+	grid1 = grid1.reshape((my, mx))
 
-    plot(x,y,z,grid1)
+	plot(x,y,z,grid1)
 
 def read_multi(nodes_file_name = '2. multiplex/multiplex_nodes.txt', edges_file_name = '2. multiplex/multiplex_edges.txt', sep = '\t', nid = 'id', eidfrom = 'source', eidto = 'target'):
 	"""A convenience function for easily reading in pipeline's multiplex. 
 	
 	Returns:
-	    multiplex.multiplex(): the pipeline's multiplex from make_multiplex.py
+		multiplex.multiplex(): the pipeline's multiplex from make_multiplex.py
 	"""
 	multi = multiplex_from_txt(nodes_file_name = nodes_file_name,
-	                                   edges_file_name = edges_file_name,
-	                                   sep = sep,
-	                                   nid = nid,
-	                                   eidfrom = eidfrom,
-	                                   eidto = eidto)
+									   edges_file_name = edges_file_name,
+									   sep = sep,
+									   nid = nid,
+									   eidfrom = eidfrom,
+									   eidto = eidto)
 	return multi
 
 def check_directory(directory):
 	"""check for the existence of a directory and add if it's not there. 
 	
 	Args:
-	    directory (str): the directory to check
+		directory (str): the directory to check
 	
 	Returns:
-	    None
+		None
 	"""
 	if not os.path.exists(directory):
 		os.makedirs(directory)
@@ -525,7 +525,7 @@ def gini_coeff(x):
 	From http://www.ellipsix.net/blog/2012/11/the-gini-coefficient-for-distribution-inequality.html
 	
 	Args:
-	    x (np.array()): an array of floats
+		x (np.array()): an array of floats
 	'''
 	# requires all values in x to be zero or positive numbers,
 	# otherwise results are undefined
@@ -535,32 +535,34 @@ def gini_coeff(x):
 	return 1 - (2.0 * (r*x).sum() + s)/(n*s)
 
 def spatial_plot(G, attr, ax, title = 'plot!'):
-	from scipy.interpolate import griddata
-	import scipy.ndimage as ndimage
+	cols = ['layer', 'lon', 'lat', attr]
+	df = utility.nodes_2_df(G, cols)
+
+	n = 2000
+	grid_x, grid_y = np.mgrid[df.lon.min():df.lon.max():n * 1j, 
+					  df.lat.min():df.lat.max():n * 1j]
+	zj = np.zeros(grid_x.shape)
 	
-    cols = ['layer', 'lon', 'lat', attr]
-    df = utility.nodes_2_df(G, cols)
-    
-    grid_x, grid_y = np.mgrid[df.lon.min():df.lon.max():2000j, 
-                              df.lat.min():df.lat.max():2000j]
-    
-    p = np.array([[df['lon'][i], df['lat'][i]] for i in df.index])
-    z = np.array([df[attr][i] for i in df.index])
-    
-    zj = griddata(p, z, (grid_x, grid_y), method='linear', fill_value = 0)
-    zi = ndimage.gaussian_filter(zj, sigma=10.0, order=0)
-    
-    G.position = {n : (G.node[n]['lon'], G.node[n]['lat']) for n in G}
-    
-    ax.contourf(grid_x, grid_y, zi, 50, linewidths=0.1, cmap=plt.get_cmap('afmhot'), alpha = 1)
-    nx.draw(G, G.position,
-		   edge_color = 'white', 
-		   edge_size = 0.01,
-		   node_color = 'white',
-		   node_size = 0,
-		   alpha = .15,
-		   with_labels = False,
-		   arrows = False)
-    plt.title(title)
+	lonmax = df.lon.max()
+	lonmin = df.lon.min()
+	latmax = df.lat.max()
+	latmin = df.lat.min()
+
+	for i in range(len(df)):
+		x = int((df.loc[i]['lon'] - lonmin) / (lonmax - lonmin)*n) - 1
+		y = int((df.loc[i]['lat'] - latmin) / (latmax - latmin)*n) - 1 
+		zj[x][y] += df.loc[i][attr]
+		
+	zi = ndimage.gaussian_filter(zj, sigma=10.0, order=0)
+	ax.contourf(grid_x, grid_y, zi, 100, linewidths=0.1, cmap=plt.get_cmap('afmhot'), alpha = 1, vmax = 1./1. * zi.max())
+	nx.draw(G, G.position,
+			edge_color = 'white', 
+			edge_size = 0.01,
+			node_color = 'white',
+			node_size = 0,
+			alpha = .15,
+			with_labels = False,
+			arrows = False)
+	plt.title(title)
 
 
