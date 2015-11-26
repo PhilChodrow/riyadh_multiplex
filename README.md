@@ -20,7 +20,13 @@ To run the full data-preparation pipeline in its most comprehensive state, run t
     python assign_traffic.py both        # alternatives: homebrew, igraph
     python scale_edge_weights.py 1.51    # or another constant
 ```
-
+This full process takes roughly one hour on PC's machine. As an alternative, running the terminal command `make all` is currently equivalent to the following sequence: 
+```
+    python make_multiplex.py             # assembles multiplex
+    python assign_traffic.py igraph      # alternatives: homebrew, both
+    python scale_edge_weights.py 1.51    # or another constant
+```
+This is currently the fastest way to run the full pipeline, and takes about 20 minutes on PC's machine. 
 ## Modules
 
 The following modules are all contained in the package `metro`. To import one of the modules, use syntax as in the following: 
