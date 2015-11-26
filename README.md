@@ -48,7 +48,8 @@ The following modules are all contained in the package `metro`. To import one of
 3. `scale_edge_weights.py` : a Python script for scaling the edge weights of the multiplex by a fixed constaint. Typically applied to travel time weights like `uniform_time_m`, `free_flow_time_m`, and `congested_time_m`. Default used in the makefile is 1.51. 
 
 ## Notebooks
-1. scaling_coefficient.ipynb : a jupyter notebook with exploratory analysis to determine the scaling coefficient used in the pipeline. 
+1. `scaling_coefficient.ipynb` : a jupyter notebook with exploratory analysis to determine the scaling coefficient used in the pipeline.
+2. `scaling_coefficient.html` : an .html render of the above for easy sharing.   
 
 ## Other
 1. `makefile` : a makefile automating the data preparation and analysis pipeline
