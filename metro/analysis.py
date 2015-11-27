@@ -1,4 +1,7 @@
 from math import sqrt
+from metro import utility
+import networkx as nx
+import numpy as np
 
 def distance(pos1,pos2):
 	"""Compute geographical distance between two points
@@ -76,7 +79,7 @@ def local_intermodality(self, layer = None, thru_layer = None, weight = None):
 	
 	nx.set_node_attributes(self.G, 'intermodality', d)
 
-def spatial_outreach(self, layer = None, weight = None, cost = None, attrname = 'outreach'):
+def spatial_outreach(multi, node_layer = 'taz', thru_layers = ['streets'], weight = None, cost = None, attrname = 'outreach'):
 	'''
 	Compute the spatial outreach of all nodes in a layer according to a specified edge weight (e.g. cost_time_m). 
 	Currently uses area of convex hull to measure outreach.
@@ -91,28 +94,29 @@ def spatial_outreach(self, layer = None, weight = None, cost = None, attrname = 
 	
 	def distance_matrix(nodes, weight):
 		N = len(nodes)
+
 		lengths = g.shortest_paths_dijkstra(weights = weight, source = nodes, target = nodes)
 		d = {nodes[i] : {nodes[j] : lengths[i][j] for j in range(N) } for i in range(N)}
 		return d
 
-	def ego(n, cost):
+	def ego(n, cost, d):
 		return [j for j in nodes if d[n][j] <= cost]
 
-	def area(n, cost):
-		points = [pos[n] for n in ego(n, cost)]
+	def area(n, cost, d):
+		points = [pos[n] for n in ego(n, cost, d)]
 		return MultiPoint(points).convex_hull.area
 		
 	print 'converting to igraph'
-	g = utility.nx_2_igraph(self.G)
-	nodes = g.vs.select(lambda vertex: vertex['layer'] == layer)['name']
+	g = utility.nx_2_igraph(multi.layers_as_subgraph(thru_layers + [node_layer]))
+	nodes = g.vs.select(lambda vertex: vertex['layer'] == node_layer)['name']
 	pos = {v['name'] : (v['lon'], v['lat']) for v in g.vs.select(lambda v: v['name'] in nodes)}
-	print 'computing distance matrix, this could take a while'
+	print 'computing distance matrix'
 	d = distance_matrix(nodes, weight)
 	print 'computing outreach'
-	outreach = {n : area(n, cost) for n in nodes}
-	nx.set_node_attributes(self.G, attrname, outreach)
+	outreach = {n : sqrt(area(n, cost, d)) for n in nodes}
+	nx.set_node_attributes(multi.G, attrname, outreach)
 
-def proximity_to(self, layers, to_layer):
+def proximity_to(multi, layers, to_layer):
 	"""Calculate how close nodes in one layer are to nodes in another. Closeness 
 	is measured as Euclidean distance, not graph distance. 
 	
@@ -123,10 +127,10 @@ def proximity_to(self, layers, to_layer):
 	Returns:
 	    TYPE: Description
 	"""
-	layers_copy = self.layers_as_subgraph(layers)	
-	to_layer_copy = self.layers_as_subgraph([to_layer])
+	layers_copy = multi.layers_as_subgraph(layers)	
+	to_layer_copy = multi.layers_as_subgraph([to_layer])
 	d = {n : utility.find_nearest(n, layers_copy, to_layer_copy)[1] for n in layers_copy.node}
-	nx.set_node_attributes(self.G, 'proximity_to_' + to_layer, d)
+	nx.set_node_attributes(multi.G, 'proximity_to_' + to_layer, d)
 
 def accessible_nodes(self, origin, weight, limit):
         '''

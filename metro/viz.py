@@ -3,12 +3,14 @@ import matplotlib as mpl
 import scipy.interpolate
 import numpy as np
 import matplotlib.cm as cm
+from metro import utility
+import networkx as nx
 
-def spatial_plot(G, attr, ax, title = 'plot!'):
+def spatial_plot(G, attr, ax, title = 'plot!', layer = 'taz'):
 	import scipy.ndimage as ndimage
 
 	cols = ['layer', 'lon', 'lat', attr]
-	df = nodes_2_df(G, cols)
+	df = utility.nodes_2_df(G, cols)
 
 	n = 2000
 	grid_x, grid_y = np.mgrid[df.lon.min():df.lon.max():n * 1j, 
@@ -20,7 +22,8 @@ def spatial_plot(G, attr, ax, title = 'plot!'):
 	latmax = df.lat.max()
 	latmin = df.lat.min()
 
-	for i in range(len(df)):
+	df = df[df['layer'] == layer]
+	for i in df.index:
 		x = int((df.loc[i]['lon'] - lonmin) / (lonmax - lonmin)*n) - 1
 		y = int((df.loc[i]['lat'] - latmin) / (latmax - latmin)*n) - 1 
 		zj[x][y] += df.loc[i][attr]

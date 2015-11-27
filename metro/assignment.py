@@ -308,7 +308,7 @@ def geo_betweenness_ITA(multi, volumeScale = .25, OD = None, pathOD = None, P = 
 # ---------------------------------------------------------------------
 # ---------------------------------------------------------------------
 
-def od_dict(G, od_loc):
+def od_dict(G, od_loc, pivot = True):
 	print 'computing od dictionary'
 	start = time.clock()
 	# compute 'base' of origin-destination pairs -- we look up information onto the base
@@ -339,11 +339,14 @@ def od_dict(G, od_loc):
 	df['flow_norm'] = df['flow'] / df['taz_norm']
 
 	# Pivot -- makes for an easier dict comprehension
-	od_matrix = df.pivot(index = 'o', columns = 'd', values = 'flow_norm')
-	od_matrix[np.isnan(od_matrix)] = 0
 	
-	od = {i : {col : od_matrix[col][i] for col in od_matrix.columns if od_matrix[col][i] > 0.00001} for i in od_matrix.index}
-	
+	if pivot: 
+		od_matrix = df.pivot(index = 'o', columns = 'd', values = 'flow_norm')
+		od_matrix[np.isnan(od_matrix)] = 0
+		od = {i : {col : od_matrix[col][i] for col in od_matrix.columns if od_matrix[col][i] > 0.00001} for i in od_matrix.index}
+	else:
+		od = df[['o', 'd', 'flow_norm']]
+
 	print 'OD dict computed in ' + str(round((time.clock() - start) / 60.0, 1)) + ' m'
 
 	return od
