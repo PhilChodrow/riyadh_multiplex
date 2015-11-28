@@ -50,7 +50,8 @@ The following modules are all contained in the package `metro`. To import one of
 ## Notebooks
 1. `scaling_coefficient.ipynb` : a jupyter notebook with exploratory analysis to determine the scaling coefficient used in the pipeline.
 2. `scaling_coefficient.html` : an .html render of the above for easy sharing. 
-3. `spatial_outreach.py` : an analysis of spatial outreach in the multiplex.   
+3. `spatial_outreach.ipynb` : an analysis of spatial outreach in the multiplex.  
+4. `shortest_paths.ipynb` : an analysis of the behavior of shortest paths in the multiplex under uniform and OD demand, including with metro scaling.  
 
 ## Other
 1. `makefile` : a makefile automating the data preparation and analysis pipeline
