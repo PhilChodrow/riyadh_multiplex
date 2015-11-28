@@ -156,4 +156,7 @@ def del_node_attribute(N,a):
 		if a in attr:
 			del attr[a]
 
-
+def scale_edge_attribute_igraph(g, layer, attr, beta = 1):
+    original = g.es.select(lambda v: v['layer'] == layer)[attr]
+    scaled = [beta * v for v in original]
+    g.es.select(lambda v: v['layer'] == layer)[attr] = scaled

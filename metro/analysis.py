@@ -185,3 +185,27 @@ def weighted_betweenness(g, od, weight = 'free_flow_time_m',scale = .25, attrnam
     print 'betweenness calculated in in ' + str(round((time.clock() - start) / 60.0,1)) + 'm'
     for key in node_dict:
         vs[key][attrname] = node_dict[key]
+
+def path_lengths_igraph(g, nodes, weight, mode = 'array'):
+    '''
+    quick finding of shortest path lengths between nodes. 
+    If as_df, returns as a pd dataframe with columns for origin and destination. 
+    If not as_df, returns a 1d np.array(). This is significantly faster in situations when we don't need
+    to keep track of o and d. 
+    '''
+    lengths = g.shortest_paths_dijkstra(weights = weight, source = nodes, target = nodes)
+    if mode == 'df':
+        q = [(nodes[i],nodes[j],lengths[i][j]) for i in range(len(nodes)) for j in range(len(nodes))]
+        o = [tup[0] for tup in q]
+        d = [tup[1] for tup in q]
+        p = [tup[2] for tup in q]
+        df = pd.DataFrame({'o' : o, 'd' : d, weight + '_length' : p})
+        return lengths
+    elif mode == 'array':
+        lengths = np.array(lengths)
+        return lengths.ravel()
+    else:
+    	return lengths
+
+def standardize(array):
+    return (array - array.mean()) / array.std()
