@@ -106,13 +106,13 @@ def spatial_outreach(multi, node_layer = 'taz', thru_layers = ['streets'], weigh
 		points = [pos[n] for n in ego(n, cost, d)]
 		return MultiPoint(points).convex_hull.area
 		
-	print 'converting to igraph'
+	
 	g = utility.nx_2_igraph(multi.layers_as_subgraph(thru_layers + [node_layer]))
 	nodes = g.vs.select(lambda vertex: vertex['layer'] == node_layer)['name']
 	pos = {v['name'] : (v['lon'], v['lat']) for v in g.vs.select(lambda v: v['name'] in nodes)}
-	print 'computing distance matrix'
+	
 	d = distance_matrix(nodes, weight)
-	print 'computing outreach'
+	
 	outreach = {n : sqrt(area(n, cost, d)) for n in nodes}
 	nx.set_node_attributes(multi.G, attrname, outreach)
 

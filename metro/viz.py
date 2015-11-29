@@ -46,3 +46,18 @@ def spatial_plot(G, attr, ax, title = 'plot!', layer = 'taz'):
 			with_labels = False,
 			arrows = False)
 	plt.title(title)
+
+
+def bubble_plot(G, size, color, size_factor = 1, **kwargs):
+	G.position = {n : (G.node[n]['lon'], G.node[n]['lat']) for n in G}
+	G.size = [G.node[n][size]*size_factor for n in G.node]
+	G.color = [G.node[n][color] for n in G.node]
+	n = nx.draw(G, G.position,
+		edge_color = 'grey', 
+		edge_size = 0.01,
+		node_color = G.color,
+		node_size = G.size,
+		linewidth = 0,
+		with_labels = False,
+		arrows = False,
+		**kwargs)
