@@ -309,7 +309,7 @@ def geo_betweenness_ITA(multi, volumeScale = .25, OD = None, pathOD = None, P = 
 # ---------------------------------------------------------------------
 
 def od_dict(G, od_loc, pivot = True):
-	print 'computing od dictionary'
+	# print 'computing od dictionary'
 	start = time.clock()
 	# compute 'base' of origin-destination pairs -- we look up information onto the base
 	taz = {n : int(G.node[n]['taz']) for n in G.node if G.node[n]['layer'] == 'taz'}
@@ -347,7 +347,7 @@ def od_dict(G, od_loc, pivot = True):
 	else:
 		od = df[['o', 'd', 'flow_norm']]
 
-	print 'OD dict computed in ' + str(round((time.clock() - start) / 60.0, 1)) + ' m'
+	# print 'OD dict computed in ' + str(round((time.clock() - start) / 60.0, 1)) + ' m'
 
 	return od
 
@@ -356,7 +356,7 @@ def od_dict_igraph(g, od_loc, pivot = True):
 	Figure out how much of this function generalizes to work for networkx keys as well,
 	would be cool to use the same one for both igraph keys and for Zeyad's networkx keys. 
 	''' 
-	print 'computing od dictionary'
+	# print 'computing od dictionary'
 	start = time.clock()
 	# compute 'base' of origin-destination pairs -- we look up information onto the base
 	taz_vs = g.vs.select(lambda v : v['layer'] == 'taz')
@@ -391,7 +391,7 @@ def od_dict_igraph(g, od_loc, pivot = True):
 		od = {i : {col : od_matrix[col][i] for col in od_matrix.columns if od_matrix[col][i] > 0.00001} for i in od_matrix.index}
 	else:
 		od = df[['o', 'd', 'flow_norm']]
-	print 'OD dict computed in ' + str(round((time.clock() - start) / 60.0,1)) + ' m'
+	# print 'OD dict computed in ' + str(round((time.clock() - start) / 60.0,1)) + ' m'
 
 	return od
 

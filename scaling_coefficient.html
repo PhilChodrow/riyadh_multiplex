@@ -165,6 +165,50 @@ div#notebook {
     });
     </script>
     <!-- End of mathjax configuration --></head>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+<style type="text/css">
+//div.output_wrapper {
+//  margin-top: 0px;
+//}
+.input_hidden {
+  display: none;
+//  margin-top: 5px;
+}
+div.prompt {
+display: none;
+}
+    .CodeMirror{
+        font-family: "Consolas", sans-serif;
+    }
+    
+pre, code, kbd, samp {
+     font-family: Consolas, monospace;
+     font-size: 10px;
+}
+p {font-size:14px;}
+    div.cell{
+        max-width:80%;
+        margin-left:auto;
+        margin-right:auto;
+    }
+    div.text_cell_render{
+        max-width:90%;
+        margin-left:auto;
+        margin-right:auto;
+    }
+h1 {
+        text-align:center;
+        font-familly:"Charis SIL", serif;
+</style>
+<script>
+$(document).ready(function(){
+  $(".output_wrapper").click(function(){
+      $(this).prev('.input_hidden').slideToggle();
+  });
+})
+</script>
 <body>
   <div tabindex="-1" id="notebook" class="border-box-sizing">
     <div class="container" id="notebook-container">
@@ -196,6 +240,7 @@ div#notebook {
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
@@ -217,6 +262,8 @@ div#notebook {
 </div>
 
 </div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -227,6 +274,7 @@ div#notebook {
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
@@ -239,6 +287,8 @@ div#notebook {
 
 </div>
 </div>
+</div>
+
 </div>
 
 <div class="output_wrapper">
@@ -268,6 +318,7 @@ OD dict computed in 0.4 m
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
@@ -282,6 +333,8 @@ OD dict computed in 0.4 m
 </div>
 
 </div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -293,6 +346,7 @@ OD dict computed in 0.4 m
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
@@ -309,7 +363,10 @@ OD dict computed in 0.4 m
 </div>
 
 </div>
+
+</div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
@@ -333,6 +390,8 @@ OD dict computed in 0.4 m
 </div>
 
 </div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -343,6 +402,7 @@ OD dict computed in 0.4 m
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
@@ -353,6 +413,8 @@ OD dict computed in 0.4 m
 
 </div>
 </div>
+</div>
+
 </div>
 
 <div class="output_wrapper">
@@ -381,6 +443,7 @@ OD dict computed in 0.4 m
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
@@ -394,6 +457,8 @@ OD dict computed in 0.4 m
 </div>
 
 </div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -404,6 +469,7 @@ OD dict computed in 0.4 m
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
@@ -418,6 +484,8 @@ OD dict computed in 0.4 m
 </div>
 
 </div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -428,6 +496,7 @@ OD dict computed in 0.4 m
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
@@ -437,6 +506,8 @@ OD dict computed in 0.4 m
 
 </div>
 </div>
+</div>
+
 </div>
 
 <div class="output_wrapper">
@@ -1256,6 +1327,7 @@ AAAAAElFTkSuQmCC
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
@@ -1265,6 +1337,8 @@ AAAAAElFTkSuQmCC
 
 </div>
 </div>
+</div>
+
 </div>
 
 <div class="output_wrapper">
@@ -1534,6 +1608,7 @@ RETEYQpjERERhymMRUREHKYwFhERcZjCWERExGEKYxEREYf9/3hhDaRCNzYhAAAAAElFTkSuQmCC
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
@@ -1544,6 +1619,8 @@ RETEYQpjERERhymMRUREHKYwFhERcZjCWERExGEKYxEREYf9/3hhDaRCNzYhAAAAAElFTkSuQmCC
 
 </div>
 </div>
+</div>
+
 </div>
 
 <div class="output_wrapper">
@@ -1572,6 +1649,7 @@ Mean of ratios: 1.74
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
+<div class="input_hidden">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
@@ -1589,6 +1667,8 @@ Mean of ratios: 1.74
 
 </div>
 </div>
+</div>
+
 </div>
 
 <div class="output_wrapper">
