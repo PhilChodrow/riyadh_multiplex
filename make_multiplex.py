@@ -142,13 +142,18 @@ def clean_streets(streets):
 	uniform_times = {key : dists[key] * uniform_speed  for key in dists}
 	nx.set_edge_attributes(streets, 'uniform_time_m', uniform_times)
 
-	# impute capacity -- just use the mean of all the other capacities. 
-	cap = [streets.edge[e[0]][e[1]]['capacity'] for e in streets.edges_iter()]
-	cap = np.array(cap)
-	mean = cap.mean()
-	for e in streets.edges_iter():
+	# Delete edges with zero capacity. to impute capacity for them instead, uncomment block below. 
+	for e in streets.copy().edges_iter():
 		if streets.edge[e[0]][e[1]]['capacity'] == 0:
-			streets.edge[e[0]][e[1]]['capacity'] = mean
+			streets.remove_edge(*e)
+
+	# impute capacity -- just use the mean of all the other capacities. 
+	# cap = [streets.edge[e[0]][e[1]]['capacity'] for e in streets.edges_iter()]
+	# cap = np.array(cap)
+	# mean = cap.mean()
+	# for e in streets.edges_iter():
+	# 	if streets.edge[e[0]][e[1]]['capacity'] == 0:
+	# 		streets.edge[e[0]][e[1]]['capacity'] = mean
 	
 	return streets
 
