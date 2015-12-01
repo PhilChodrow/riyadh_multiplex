@@ -83,9 +83,12 @@ def clean_metro(metro):
 	nx.set_edge_attributes(metro, 'free_flow_time_m', time_m)
 	nx.set_edge_attributes(metro, 'uniform_time_m', nx.get_edge_attributes(metro, 'free_flow_time_m'))
 
-	dists = {(e[0], e[1]) : analysis.distance((metro.node[e[0]]['lat'],metro.node[e[0]]['lon']) , 
-							  (metro.node[e[1]]['lat'],metro.node[e[1]]['lon'])) for e in metro.edges_iter()}
-	nx.set_edge_attributes(metro, 'dist_km', dists)
+	# -----------------------------------------------------------
+	# ZEYAD: please delete the below three lines when you update the metro data set. Replace them with whatever is necessary to appropriate set a distance attribute in kilometers. 
+	# dists = {(e[0], e[1]) : analysis.distance((metro.node[e[0]]['lat'],metro.node[e[0]]['lon']) , 
+	# 						  (metro.node[e[1]]['lat'],metro.node[e[1]]['lon'])) for e in metro.edges_iter()}
+	# nx.set_edge_attributes(metro, 'dist_km', dists)
+	# -----------------------------------------------------------
 
 	# assume metro has unlimited capacity
 	nx.set_edge_attributes(metro, 'capacity', 100000000000000000000000)
