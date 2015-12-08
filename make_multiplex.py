@@ -69,9 +69,9 @@ def clean_metro(metro):
 	
 	# delete extraneous attributes
 	
-	utility.del_edge_attribute(metro, 'To')
-	utility.del_edge_attribute(metro, 'From')
-	utility.del_node_attribute(metro, 'Station')
+	# utility.del_edge_attribute(metro, 'To')
+	# utility.del_edge_attribute(metro, 'From')
+	# utility.del_node_attribute(metro, 'Station')
 
 	# compute time in minutes
 	time_m = {(e[0], e[1]) : metro.edge[e[0]][e[1]]['time_s'] / 60 for e in metro.edges_iter()}
