@@ -61,7 +61,7 @@ def main():
 		else:
 			print 'methods do not agree to within 0.001%'
 
-	io.multiplex_to_txt(multi, '2_multiplex/', 'multiplex_unscaled')
+	io.multiplex_to_txt(multi, '2_multiplex/', 'multiplex')
 
 def ITA1(multi, od_loc = '1_data/taz_od/0_1.txt', attrname = 'congested_time_m',  **kwargs):
 	G = multi.as_graph()

@@ -9,7 +9,7 @@ def main():
 	multi = io.read_multi(nodes_file_name = '2_multiplex/multiplex_unscaled_nodes.txt', 
 						  edges_file_name = '2_multiplex/multiplex_unscaled_edges.txt')
 
-	weights = ['congested_time_m', 'uniform_time_m', 'free_flow_time_m']
+	weights = ['uniform_time_m', 'free_flow_time_m']
 
 	print 'Means prior to rescaling'
 	for weight in weights:
@@ -24,7 +24,7 @@ def main():
 				  if multi.G.edge[e[0]][e[1]]['layer'] == 'streets'])
 		print weight + ': ' + str(round(x.mean(),2))
 
-	io.multiplex_to_txt(multi, '2_multiplex/', 'multiplex')
+	io.multiplex_to_txt(multi, '2_multiplex/', 'multiplex_no_traffic')
 
 if __name__ == '__main__':
 	main()

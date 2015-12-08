@@ -37,7 +37,7 @@ def main():
 	                   capacity = 1e10, 
 	                   both = True, )
 
-	io.multiplex_to_txt(multi, '2_multiplex', 'multiplex_no_traffic')
+	io.multiplex_to_txt(multi, '2_multiplex', 'multiplex_unscaled')
 
 def read_metro(directory, file_prefix):
 	"""convenience function to quickly read in and clean the metro network
