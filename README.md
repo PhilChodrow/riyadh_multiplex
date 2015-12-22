@@ -52,7 +52,8 @@ The following modules are all contained in the package `metro`. To import one of
 2. `scaling_coefficient.html` : an .html render of the above for easy sharing. 
 3. `spatial_outreach.ipynb` : an analysis of spatial outreach in the multiplex.  
 4. `shortest_paths.ipynb` : an analysis of the behavior of shortest paths in the multiplex under uniform and OD demand, including with metro scaling.  
-
+5. `reducing_congestion.ipynb` : an analysis of the 'urban planner's dream' for reducing congestion by strategically routing ODs through public transportation. 
+ 
 ## Other
 1. `makefile` : a makefile automating the data preparation and analysis pipeline
 2. `methods/methods.tex` : A .tex document outlining the analytical approach of the project.  
