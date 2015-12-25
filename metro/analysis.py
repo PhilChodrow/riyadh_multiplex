@@ -214,3 +214,72 @@ def path_lengths_igraph(g, nodes, weight, mode = 'array'):
 
 def standardize(array):
 	return (array - array.mean()) / array.std()
+
+
+def congestion_gradient(free_flow_time_m, flow, capacity, a = .15, b = 4): # based on BPR function
+    return free_flow_time_m * a * b * (flow / capacity) ** b
+
+def traffic_summary(g, od, weight, flow):
+    from collections import defaultdict
+    df = defaultdict(int)
+    
+    di = {e.index : (g.es[e.index]['layer'],
+                g.es[e.index]['capacity'],
+                g.es[e.index][flow], 
+                float(g.es[e.index]['free_flow_time_m']),
+                float(g.es[e.index][weight]),
+                float(g.es[e.index]['dist_km'])) 
+         for e in g.es}
+
+    o = []
+    d = []
+    flow = []
+    traffic = []
+    capacity = []
+    free_flow_time_m = []
+    congested_time_m = []
+    dist_km = []
+    gradient = []
+    
+    for origin in od:
+        ds = od[origin]
+        if len(ds) > 0: 
+            targets = ds.keys()
+            paths = g.get_shortest_paths(origin,
+                                        to = targets,
+                                        weights = weight,
+                                        mode = 'OUT',
+                                        output = 'epath')
+            for i in range(len(targets)):
+                street_path = [e for e in paths[i] if di[e][0] == 'streets']
+                metro_path = [e for e in paths[i] if di[e][0] == 'metro']
+                
+                o += [origin]
+                d += [targets[i]]
+                flow += [od[origin][targets[i]]]
+                traffic += [np.sum([di[e][2]*di[e][5] for e in street_path])]
+                capacity += [np.sum([di[e][1]*di[e][5] for e in street_path])]
+                free_flow_time_m += [np.sum([di[e][3] for e in street_path])]
+                congested_time_m += [np.sum([di[e][4] for e in street_path])]
+                dist_km += [np.sum([di[e][5] for e in street_path])]
+                gradient += [np.sum([congestion_gradient(di[e][3], di[e][2], di[e][1]) 
+                                            for e in street_path])]
+    
+    df = pd.DataFrame({'o' : np.array(o), 
+                       'd' : np.array(d), 
+                       'traffic' : np.array(traffic),
+                       'capacity' : np.array(capacity),
+                       'free_flow_time_m' : np.array(free_flow_time_m),
+                       weight : np.array(congested_time_m),
+                       'dist_km' : np.array(dist_km),
+                       'flow' : np.array(flow),
+                       'gradient' : np.array(gradient)})
+    
+    df = df[df['capacity'] != 0]
+    
+    df['ratio'] = df['traffic']/df['capacity']
+    df['time_lost'] = df[weight]/df['free_flow_time_m']
+    df['mean_speed'] = df['dist_km'] / df[weight]*60
+    df['congestion_impact'] = df['gradient'] * df['flow']
+    
+    return df
