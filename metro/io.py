@@ -38,7 +38,6 @@ def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', n
 	N = nx.DiGraph()
 	for n in range(len(nodes)):
 		attr = {nid: nodes[nid][n]}
-		# print nodes[nid][n]
 		attr2 = {col: nodes[col][n] for col in list(nodes) if col != nid}
 		attr.update(attr2)
 		

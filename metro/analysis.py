@@ -2,6 +2,11 @@ from math import sqrt
 from metro import utility
 import networkx as nx
 import numpy as np
+from collections import defaultdict
+from shapely.geometry import MultiPolygon, Point, shape
+import pandas as pd
+
+
 
 
 def distance(pos1,pos2):
@@ -217,7 +222,7 @@ def standardize(array):
 
 
 def congestion_gradient(free_flow_time_m, flow, capacity, a = .15, b = 4): # based on BPR function
-    return free_flow_time_m * a * b * (flow / capacity) ** b
+    return free_flow_time_m * a * b * ((flow / capacity) ** b)
 
 def traffic_summary(g, od, weight, flow):
     from collections import defaultdict
@@ -283,3 +288,90 @@ def traffic_summary(g, od, weight, flow):
     df['congestion_impact'] = df['gradient'] * df['flow']
     
     return df
+
+def street_level_gradients(multi):
+    def compute_gradients(sources, targets, graph):
+        o = []
+        d = []
+        gradient = []
+        for v in sources:
+            paths = graph.get_shortest_paths(v, to = targets,weights = 'congested_time_m', output = 'epath')
+            for i in range(len(targets)):
+                grad = sum([graph.es[e]['gradient'] for e in paths[i]])
+                o.append(v.index)
+                d.append(targets[i].index)
+                gradient.append(grad)
+        df = pd.DataFrame({'o' : o, 'd' : d, 'gradient' : gradient})
+        return df[['o','d','gradient']]
+    
+    g = utility.nx_2_igraph(multi.layers_as_subgraph(['taz','streets']))
+    taz_nodes = g.vs.select(lambda v : v['layer'] == 'taz')
+    	
+    df = compute_gradients(taz_nodes, taz_nodes, g)
+    
+    node_lookup = node_lookup = {v.index : v['name'] for v in g.vs}
+    df['o'] = df['o'].map(node_lookup.get)
+    df['d'] = df['d'].map(node_lookup.get)
+    
+    return df
+
+def to_metro_gradients(multi):
+    def route_gradient(u,v,g):
+        path = g.get_shortest_paths(u,v,weights='congested_time_m',output='epath')[0]
+        gradient = sum([g.es[e]['gradient'] for e in path])
+        return gradient
+
+    def rowwise_gradient(row):
+        return route_gradient(row['taz'], row['closest_metro'], g)
+
+    G = multi.layers_as_subgraph(['metro', 'taz', 'streets'])
+    g = utility.nx_2_igraph(G)
+
+    taz_nodes = g.vs.select(lambda v : v['layer'] == 'taz')
+    metro_nodes = g.vs.select(lambda v : v['layer'] == 'metro')
+
+    x = g.shortest_paths_dijkstra(source = taz_nodes, target = metro_nodes, weights = 'congested_time_m') 
+    x = np.array(x)
+    nearest = np.argmin(x, axis=1)
+    
+    taz_nodes = [taz_nodes[i].index for i in range(len(taz_nodes))]
+    closest_metro = [metro_nodes[nearest[i]].index for i in range(len(taz_nodes))]
+    dg = pd.DataFrame({'taz' : taz_nodes, 'closest_metro' : closest_metro})
+    dg['gradient'] = dg.apply(rowwise_gradient, axis = 1)
+
+    node_lookup = {v.index : v['name'] for v in g.vs}
+    dg['closest_metro'] = dg['closest_metro'].map(node_lookup.get)
+    dg['taz'] = dg['taz'].map(node_lookup.get)
+    
+    return dg
+
+def weighted_avg_and_std(values, weights):
+    """
+    Return the weighted average and standard deviation.
+
+    values, weights -- Numpy ndarrays with the same shape.
+
+    From http://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy
+    """
+    average = np.average(values, weights=weights)
+    variance = np.average((values-average)**2, weights=weights)  # Fast and numerically precise
+    return (average, sqrt(variance))
+
+
+def construct_tract_getter(tracts, id_field):
+    tract_dict = defaultdict(str)
+    for tract in tracts:
+        tract_id = tract['properties'][id_field]
+        tract = shape(tract['geometry'])
+        if tract.geom_type == 'MultiPolygon':
+            for p in list(tract):
+                tract_dict[p] = tract
+        elif tract.geom_type == 'Polygon':
+            tract_dict[tract] = tract_id
+    
+    def get_tract(row):
+        p = Point(row['lon'], row['lat'])
+        for tract in tract_dict:
+            if p.within(tract):
+                return tract_dict[tract]
+    return get_tract

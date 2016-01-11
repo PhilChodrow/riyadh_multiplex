@@ -62,28 +62,11 @@ def edges_2_df(N, col_names = ['layer']):
         d[col] = attr
     return pd.DataFrame(d)
 
-def nodes_2_df(N, col_names = ['layer', 'lon', 'lat']):
-	"""
-	Convert the nodes of a networkx.DiGraph() object into a pandas.DataFrame
 
-	Args:
-		N (networkx.DiGraph()): the graph to convert
-
-	Returns: 
-		a pandas.DataFrame with node attributes as columns
-	"""
-	if col_names == None:
-		col_names = set([])
-		for n in N.node:
-			col_names = col_names.union(N.node[n].keys())
-
-	d = {}
-	for col in col_names: 
-		attr = nx.get_node_attributes(N, col)
-		attr = [attr[n] if n in attr.keys() else None for n in N.node]
-		d[col] = attr
-	
-	return pd.DataFrame(d)
+def nodes_2_df(G, attrs):
+    attrs = attrs + ['id']
+    attrdict = {attr : [G.node[n][attr] or None for n in G.node] for attr in attrs}
+    return pd.DataFrame(attrdict)
 
 def rename_node_attribute(N, old, new):
 	""" rename a node attribute in a networkx.DiGraph() object. 

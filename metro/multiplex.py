@@ -271,4 +271,7 @@ class multiplex:
 
 		return np.dot(attr_array.T, weight_array) / (weight_array**2).sum()
 
+	def nodes_2_df(self, layers, attrs):
+		attrs = attrs + ['layer']
+		return utility.nodes_2_df(self.layers_as_subgraph(layers), attrs)
 
