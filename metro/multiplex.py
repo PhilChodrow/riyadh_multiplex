@@ -5,6 +5,8 @@ from numpy import sqrt
 from time import clock
 import pandas as pd
 import os
+import numpy as np
+
 
 class multiplex:
 	'''
@@ -18,6 +20,7 @@ class multiplex:
 	def __init__(self):
 		self.layers = []
 		self.G = nx.DiGraph()
+		self.od = None
 
 	def add_layers(self, layer_dict):
 		'''
@@ -36,7 +39,53 @@ class multiplex:
 				nx.set_edge_attributes(layer_dict[layer], 'layer', layer)
 				self.G = nx.disjoint_union(self.G, layer_dict[layer])
 				self.label_nodes()
-	
+		
+	def read_od(self, layer, key, od_file, sep, **kwargs):
+
+		from itertools import product
+
+		K = self.layers_as_subgraph([layer])
+		cons = {n : int(K.node[n][key]) for n in K}
+
+		o, d = zip(*product(cons.keys(), cons.keys()))
+
+		df = pd.DataFrame({'o' : o, 'd' : d})
+
+		df['o_tract'] = df['o'].map(cons.get) 
+		df['d_tract'] = df['d'].map(cons.get)
+
+		od = pd.read_table(od_file, sep = sep, **kwargs)
+
+		od.rename(columns = {'o' : 'o_tract', 'd' : 'd_tract'}, inplace = True)
+
+		df = df.merge(od)
+
+		norms = pd.DataFrame(df.groupby(['o_tract','d_tract']).size())
+		norms.rename(columns = {0 : 'norm'}, inplace = True)
+
+		df = df.merge(norms, left_on= ['o_tract', 'd_tract'], right_index=True)
+		    
+		df['flow'] = df['flow'] / df['norm']
+		
+		mat = df.pivot(index = 'o', columns = 'd', values = 'flow')
+		mat[np.isnan(mat)] = 0
+		
+		od = mat.to_dict('index')
+
+		from copy import deepcopy
+		od_copy = deepcopy(od)
+		for origin in od_copy:
+		    for destination in od_copy[origin]:
+		        if od[origin][destination] < .00000001:
+		            del od[origin][destination]
+
+		self.od = od
+
+	def re_key_od(self, key_map):
+		self.od = re_key_od(self.od, key_map)
+
+		
+
 	def add_epsilon(self, weight, epsilon):
 		'''
 		Add a small positive number to a numeric attribute of self.G.edges()
@@ -50,13 +99,17 @@ class multiplex:
 		d = {e : float(self.G.edge[e[0]][e[1]][weight] or 0) + epsilon for e in self.G.edges_iter()}
 		nx.set_edge_attributes(self.G, weight, d)
 
-	def label_nodes(self):
+	def label_nodes(self, old_label = 'old_label'):
 		'''
 		Relabel the nodes in the format layer_int, e.g. 'streets_214'. 
 		'''
-		nx.convert_node_labels_to_integers(self.G)
+		self.G = nx.convert_node_labels_to_integers(self.G, label_attribute = old_label)
 		new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) for n in self.G.node} 
-		nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
+		self.G = nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
+
+		if self.od is not None:
+			key_map = {self.G.node[n][old_label] : n for n in self.G}
+			self.re_key_od(key_map)
 
 	def add_graph(self, H):
 		'''
@@ -66,11 +119,11 @@ class multiplex:
 		'''
 		self.G = nx.disjoint_union(self.G, H)
 		self.update_layers()
-		self.set_node_labels('id')
+		self.label_nodes('id')
 		
-	def set_node_labels(self, label):
-		new_labels = {n : self.G.node[n][label] for n in self.G.node}
-		nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
+	# def set_node_labels(self, label):
+	# 	new_labels = {n : self.G.node[n][label] for n in self.G.node}
+	# 	nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
 
 	def get_layers(self):
 		'''Return the current layer list.'''
@@ -202,9 +255,15 @@ class multiplex:
 		layers = {layer: (len([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer]), 
 						  len([(u,v,d) for u,v,d in self.G.edges(data=True) if d['layer'] == layer])) for layer in self.layers} 
 		
-		print "Layer \t N \t E "
+		if self.od is not None:
+			print 'OD: loaded\n'
+		else: 
+			print 'OD: none \n'
+
+		print '{0: <16}'.format('layer') + '\tnodes \tedges'
+		print '-'*40
 		for layer in layers:
-			print layer, "\t", layers[layer][0], "\t", layers[layer][1]  
+			print '{0: <16}'.format(layer), "\t", layers[layer][0], "\t", layers[layer][1]  
 
 	def to_txt(self, directory, file_name):
 		'''
@@ -274,4 +333,16 @@ class multiplex:
 	def nodes_2_df(self, layers, attrs):
 		attrs = attrs + ['layer']
 		return utility.nodes_2_df(self.layers_as_subgraph(layers), attrs)
+
+	def to_igraph(self):
+		g = utility.nx_2_igraph(self.G)
+		d = {v['name'] : v.index for v in g.vs}
+		od_ig = re_key_od(self.od, d)
+		return g, od_ig
+
+# Helper FUNCTIONS ------
+
+def re_key_od(od, key_map):
+	new_od = {key_map[o] : {key_map[d] : od[o][d] for d in od[o]} for o in od}
+	return new_od
 
