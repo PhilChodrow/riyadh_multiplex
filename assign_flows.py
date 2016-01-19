@@ -46,7 +46,9 @@ for beta in betas:
   df = multi.run_ita(n_nodes = None, 
                 summary = summary, # change this to get route tables 
                 attrname = 'congested_time_m_' + str(beta),
-                flow_name = 'flow_' +str(beta))
+                flow_name = 'flow_' +str(beta),
+                P = [.1]*10,
+                scale = .25)
 
   if df is not None:
     df.to_csv('3_throughput/route_info_' + str(beta) + '.csv')

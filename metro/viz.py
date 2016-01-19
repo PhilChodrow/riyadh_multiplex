@@ -8,6 +8,7 @@ import networkx as nx
 # from descartes import PolygonPatch
 from matplotlib.collections import PatchCollection
 from matplotlib import colors
+from metro import analysis
 
 def spatial_plot(G, attr, ax, title = 'plot!', layer = 'taz'):
 	import scipy.ndimage as ndimage
@@ -140,13 +141,26 @@ def flow_plot(multi, flow_attr, ax):
                            edge_vmax = 1.5,
                            ax = ax)
 
-    G = multi.layers_as_subgraph(['metro'])
-    nx.draw_networkx_edges(G, get_coords(G),
-            edge_color = 'white', 
-            width = get_edge_scalar(G, flow_attr) * .0003,
-            node_color = 'white',
-            node_size = 0,
-            alpha = .4,
-            with_labels = False,
-            arrows = False,
-            ax = ax)
+    if multi.check_layer('metro'):
+      G = multi.layers_as_subgraph(['metro'])
+      nx.draw_networkx_edges(G, get_coords(G),
+              edge_color = 'white', 
+              width = get_edge_scalar(G, flow_attr) * .0003,
+              node_color = 'white',
+              node_size = 0,
+              alpha = .4,
+              with_labels = False,
+              arrows = False,
+              ax = ax)
+
+def weighted_hist(ax, measure, weights, label, standardized = False, **kwargs):
+    n = 100
+    if standardized:
+        mu, sigma = analysis.weighted_avg_and_std(measure, weights)
+        hist_data = 1.0 * (measure - mu) / sigma
+    else:
+        hist_data = measure
+    hist = np.histogram(hist_data, weights = weights, normed = True, bins = n)
+    x = hist[1][:n] 
+    y = hist[0]
+    ax.plot(x,y, label = label, **kwargs)

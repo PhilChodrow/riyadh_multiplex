@@ -1,4 +1,4 @@
-from metro import io
+from metro import multiplex as mx
 import numpy as np
 import sys
 
@@ -6,7 +6,7 @@ import sys
 def main():
 	c = float(sys.argv[1])
 
-	multi = io.read_multi(nodes_file_name = '2_multiplex/multiplex_unscaled_nodes.txt', 
+	multi = mx.read_multi(nodes_file_name = '2_multiplex/multiplex_unscaled_nodes.txt', 
 						  edges_file_name = '2_multiplex/multiplex_unscaled_edges.txt')
 
 	weights = ['uniform_time_m', 'free_flow_time_m']
@@ -24,7 +24,7 @@ def main():
 				  if multi.G.edge[e[0]][e[1]]['layer'] == 'streets'])
 		print weight + ': ' + str(round(x.mean(),2))
 
-	io.multiplex_to_txt(multi, '2_multiplex/', 'multiplex_no_traffic')
+	io.multiplex_to_txt(multi, '2_multiplex/', 'mx')
 
 if __name__ == '__main__':
 	main()
