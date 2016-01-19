@@ -1,5 +1,4 @@
 from metro import analysis
-from metro import io
 from metro import utility 
 from metro import multiplex as mx
 import networkx as nx
@@ -37,7 +36,7 @@ def main():
 	                   capacity = 1e10, 
 	                   both = True, )
 
-	io.multiplex_to_txt(multi, '2_multiplex', 'multiplex_unscaled')
+	multi.to_txt('2_multiplex', 'multiplex_unscaled')
 
 def read_metro(directory, file_prefix):
 	"""convenience function to quickly read in and clean the metro network
@@ -49,7 +48,7 @@ def read_metro(directory, file_prefix):
 	Returns:
 		networkx.DiGraph(): the metro network
 	"""
-	metro = io.graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
+	metro = mx.graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
 						   edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
 						   sep = '\t', 
 						   nid = 'Station', 
@@ -85,9 +84,9 @@ def clean_metro(metro):
 
 	# -----------------------------------------------------------
 	# ZEYAD: please delete the below three lines when you update the metro data set. Replace them with whatever is necessary to appropriate set a distance attribute in kilometers. 
-	# dists = {(e[0], e[1]) : analysis.distance((metro.node[e[0]]['lat'],metro.node[e[0]]['lon']) , 
-	# 						  (metro.node[e[1]]['lat'],metro.node[e[1]]['lon'])) for e in metro.edges_iter()}
-	# nx.set_edge_attributes(metro, 'dist_km', dists)
+	dists = {(e[0], e[1]) : analysis.distance((metro.node[e[0]]['lat'],metro.node[e[0]]['lon']) , 
+							  (metro.node[e[1]]['lat'],metro.node[e[1]]['lon'])) for e in metro.edges_iter()}
+	nx.set_edge_attributes(metro, 'dist_km', dists)
 	# -----------------------------------------------------------
 
 	# assume metro has unlimited capacity
@@ -108,7 +107,7 @@ def read_streets(directory, file_prefix):
 	Returns:
 		networkx.DiGraph(): the street network. 
 	"""
-	streets = io.graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
+	streets = mx.graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt', 
 						   edges_file_name = directory + '/' + file_prefix +'_edges.txt', 
 						   sep = ' ', 
 						   nid = 'id', 
@@ -158,14 +157,13 @@ def clean_streets(streets):
 	return streets
 
 def read_taz(directory, file_prefix):
-	taz = io.graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt',
+	taz = mx.graph_from_txt(nodes_file_name = directory + '/' + file_prefix +'_nodes.txt',
 	                             nid = 'id',
 	                             sep = '\t')
 	print str(len(taz.nodes())) + ' nodes added to TAZ connector network'
 	return taz
 
 def clean_taz(taz):
-	utility.del_node_attribute(taz, 'con_name')
 	return taz
 
 

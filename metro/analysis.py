@@ -7,8 +7,6 @@ from shapely.geometry import MultiPolygon, Point, shape
 import pandas as pd
 
 
-
-
 def distance(pos1,pos2):
 	"""Compute geographical distance between two points
 	
@@ -192,7 +190,6 @@ def weighted_betweenness(g, od, weight = 'free_flow_time_m',scale = .25, attrnam
 					for v in path: 
 						node_dict[v] += scale * flow
 					
-
 	for key in node_dict:
 		vs[key][attrname] = node_dict[key]
 
@@ -221,8 +218,17 @@ def standardize(array):
 	return (array - array.mean()) / array.std()
 
 
-def congestion_gradient(free_flow_time_m, flow, capacity, a = .15, b = 4): # based on BPR function
-    return free_flow_time_m * a * b * ((flow / capacity) ** b)
+
+def congestion_gradient(free_flow_time_m, flow, capacity, a = .15, b = 4, components = 'both'): 
+	selfish = free_flow_time_m * (a * (flow/capacity) ** (b))
+	social = free_flow_time_m * a * b * ((flow / capacity) ** b)
+
+	if components == 'both':
+		return selfish + social
+	elif components == 'selfish':
+		return selfish
+	elif components == 'social':
+		return social
 
 def traffic_summary(g, od, weight, flow):
     from collections import defaultdict
@@ -289,27 +295,66 @@ def traffic_summary(g, od, weight, flow):
     
     return df
 
-def street_level_gradients(multi):
+def gradients(multi, layers):
+	# Assumes that the edges have a flow attribute, computed in the assignment stage
     def compute_gradients(sources, targets, graph):
+
+    	di = {e.index : (g.es[e.index]['layer'],
+                g.es[e.index]['capacity'],
+                g.es[e.index]['flow'], 
+                float(g.es[e.index]['free_flow_time_m'])) 
+        for e in g.es}
+
+
         o = []
         d = []
+        selfish_gradient = []
+        social_gradient = []
         gradient = []
+
         for v in sources:
             paths = graph.get_shortest_paths(v, to = targets,weights = 'congested_time_m', output = 'epath')
             for i in range(len(targets)):
-                grad = sum([graph.es[e]['gradient'] for e in paths[i]])
+            	path = paths[i]
+                selfish_grad = np.sum([congestion_gradient(free_flow_time_m = di[e][3], 
+                                   						flow = di[e][2],
+                                   						capacity = di[e][1],
+                                   						components = 'selfish')
+                					for e in path])
+
+                social_grad = np.sum([congestion_gradient(free_flow_time_m = di[e][3], 
+                                   						flow = di[e][2],
+                                   						capacity = di[e][1],
+                                   						components = 'social')
+                				  for e in path])
+
+                grad = np.sum([congestion_gradient(free_flow_time_m = di[e][3], 
+                                   						flow = di[e][2],
+                                   						capacity = di[e][1],
+                                   						components = 'both')
+                			for e in path])
+
                 o.append(v.index)
                 d.append(targets[i].index)
+                selfish_gradient.append(selfish_grad)
+                social_gradient.append(social_grad)
                 gradient.append(grad)
-        df = pd.DataFrame({'o' : o, 'd' : d, 'gradient' : gradient})
-        return df[['o','d','gradient']]
+            print v.index
+
+        df = pd.DataFrame({'o' : o, 
+                          'd' : d, 
+                          'selfish_gradient' : selfish_gradient, 
+                          'social_gradient' : social_gradient, 
+                          'gradient' : gradient})
+
+        return df[['o','d', 'selfish_gradient', 'social_gradient', 'gradient']]
     
-    g = utility.nx_2_igraph(multi.layers_as_subgraph(['taz','streets']))
+    g = utility.nx_2_igraph(multi.layers_as_subgraph(layers + ['taz']))
     taz_nodes = g.vs.select(lambda v : v['layer'] == 'taz')
     	
     df = compute_gradients(taz_nodes, taz_nodes, g)
     
-    node_lookup = node_lookup = {v.index : v['name'] for v in g.vs}
+    node_lookup = {v.index : v['name'] for v in g.vs}
     df['o'] = df['o'].map(node_lookup.get)
     df['d'] = df['d'].map(node_lookup.get)
     

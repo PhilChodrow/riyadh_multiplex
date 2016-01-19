@@ -406,6 +406,8 @@ def ITA_igraph(g, od, base_cost = 'free_flow_time_m', P = [0.4, 0.3, 0.2, 0.1], 
 	es[attrname] = list(es[base_cost])
 	
 	edge_dict = collections.defaultdict(int)
+	lengths = pd.DataFrame(columns = ['o', 'd', 'length'])
+	
 	for p in P:
 		start = time.clock()
 		print 'assigning for p = ' + str(p)

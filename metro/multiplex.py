@@ -6,7 +6,7 @@ from time import clock
 import pandas as pd
 import os
 import numpy as np
-
+import ita
 
 class multiplex:
 	'''
@@ -43,9 +43,11 @@ class multiplex:
 	def read_od(self, layer, key, od_file, sep, **kwargs):
 
 		from itertools import product
+		
 
 		K = self.layers_as_subgraph([layer])
 		cons = {n : int(K.node[n][key]) for n in K}
+		
 
 		o, d = zip(*product(cons.keys(), cons.keys()))
 
@@ -53,31 +55,37 @@ class multiplex:
 
 		df['o_tract'] = df['o'].map(cons.get) 
 		df['d_tract'] = df['d'].map(cons.get)
+		
 
 		od = pd.read_table(od_file, sep = sep, **kwargs)
+		
 
 		od.rename(columns = {'o' : 'o_tract', 'd' : 'd_tract'}, inplace = True)
 
-		df = df.merge(od)
+		df = df.merge(od, how = 'inner')
 
 		norms = pd.DataFrame(df.groupby(['o_tract','d_tract']).size())
 		norms.rename(columns = {0 : 'norm'}, inplace = True)
 
 		df = df.merge(norms, left_on= ['o_tract', 'd_tract'], right_index=True)
+		
 		    
 		df['flow'] = df['flow'] / df['norm']
+		
 		
 		mat = df.pivot(index = 'o', columns = 'd', values = 'flow')
 		mat[np.isnan(mat)] = 0
 		
 		od = mat.to_dict('index')
+		
 
 		from copy import deepcopy
 		od_copy = deepcopy(od)
 		for origin in od_copy:
 		    for destination in od_copy[origin]:
-		        if od[origin][destination] < .00000001:
+		        if od[origin][destination] < .00000000001:
 		            del od[origin][destination]
+	
 
 		self.od = od
 
@@ -273,8 +281,8 @@ class multiplex:
 			directory -- (str) the directory in which to save the file_name
 			file_name -- (str) the file prefix, will have '_nodes.txt' and _edges.txt' suffixed. 
 		'''
-		io.write_nx_nodes(self.G, directory, file_name + '_nodes.txt')
-		io.write_nx_edges(self.G, directory, file_name + '_edges.txt')
+		write_nx_nodes(self.G, directory, file_name + '_nodes.txt')
+		write_nx_edges(self.G, directory, file_name + '_edges.txt')
 
 	def update_layers(self):
 		'''
@@ -340,9 +348,201 @@ class multiplex:
 		od_ig = re_key_od(self.od, d)
 		return g, od_ig
 
+	def run_ita(self, n_nodes = None, summary = False, attrname = 'congested_time_m', flow_name = 'flow', P = [.4, .3, .2, .1], scale = 1):
+
+		g, od = self.to_igraph()
+		if n_nodes is not None:
+			sub_od = {key : od[key] for key in od.keys()[:n_nodes]}
+			df = ita.ITA(g, sub_od, P = P, details = summary, scale = scale)
+		else:
+			df = ita.ITA(g, od, P = P, details = summary, scale = scale)	
+
+		d = {(g.vs[g.es[i].source]['name'], g.vs[g.es[i].target]['name']) : g.es[i]['congested_time_m'] for i in range(len(g.es))}
+		f = {(g.vs[g.es[i].source]['name'], g.vs[g.es[i].target]['name']) : g.es[i]['flow'] for i in range(len(g.es))}
+
+		nx.set_edge_attributes(self.G, attrname, nx.get_edge_attributes(self.G, 'free_flow_time_m'))
+		nx.set_edge_attributes(self.G, flow_name, 0)
+
+		nx.set_edge_attributes(self.G, attrname, d)
+		nx.set_edge_attributes(self.G, flow_name, f)
+
+		return df
+
+	def edges_2_df(self, layers, attrs):
+		attrs = attrs  ['layer']
+		return utility.edges_2(self.layers_as_subgraph(layers), attrs)
+
+
 # Helper FUNCTIONS ------
+# --------------------------------------------------------------------------------------------------------------
 
 def re_key_od(od, key_map):
 	new_od = {key_map[o] : {key_map[d] : od[o][d] for d in od[o]} for o in od}
 	return new_od
 
+def check_directory(directory):
+	"""check for the existence of a directory and add if it's not there. 
+	
+	Args:
+		directory (str): the directory to check
+	
+	Returns:
+		None
+	"""
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+
+
+def graph_from_txt(nodes_file_name = None, edges_file_name = None, sep = '\t', nid = None, eidfrom = None, eidto = None):
+	"""Summary
+	
+	Args:
+		nodes_file_name (str, optional): the file in which to find node ids and attributes
+		edges_file_name (str, optional): the file in which to find edge ids and attributes
+		sep (str, optional): the separator character used in the node and edge files
+		nid (str, optional): the hashable attribute used to identify nodes
+		eidfrom (str, optional): the hashable attribute used to identify sources of edges (must match nid)
+		eidto (str, optional): the hashable attribute used to identify targets of edges (must match nid)
+	
+	Returns:
+		a networkx.DiGraph() object
+	"""
+	nodes = pd.read_table(nodes_file_name, sep = sep, index_col=False)
+	for col in nodes:
+		nodes[col] = pd.to_numeric(nodes[col], errors = 'ignore')
+	
+	N = nx.DiGraph()
+	for n in range(len(nodes)):
+		attr = {nid: nodes[nid][n]}
+		attr2 = {col: nodes[col][n] for col in list(nodes) if col != nid}
+		attr.update(attr2)
+		
+		N.add_node(n = nodes[nid][n], attr_dict = attr)
+
+	if edges_file_name is not None: 
+		edges = pd.read_table(edges_file_name, sep = sep, index_col=False)
+		for col in edges:
+			edges[col] = pd.to_numeric(edges[col], errors = 'ignore')
+
+		for e in range(len(edges)):
+			attr = {eidfrom : edges[eidfrom][e], eidto : edges[eidto][e]}
+			attr2 = {col: edges[col][e] for col in list(edges)}
+			attr.update(attr2)
+			N.add_edge(edges[eidfrom][e], edges[eidto][e], attr)
+
+	return N
+
+def write_nx_nodes(N, directory, file_name):
+	'''
+	Write the nodes of a networkx.DiGraph() object to a .txt file
+	Args:
+		N (networkx.DiGraph()): the graph to write
+		directory (str): the directory in which to save the file
+		file_name (str): the name under which to save the file
+	'''
+	col_names = set([])
+	for n in N.node:
+		col_names = col_names.union(N.node[n].keys())
+
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+
+	nodes = open(directory + '/' + file_name, 'w')
+
+	nodes.write('id')
+	for col in col_names:
+		if col == 'id':
+			pass
+		else:
+			nodes.write('\t' + col)
+
+	for n in N.node:
+		nodes.write('\n'  + str(n))
+		for col in col_names:
+			if col == 'id':
+				pass
+			else:
+				try:
+					nodes.write('\t' + str(N.node[n][col]))
+				except KeyError:
+					nodes.write('\tNone')
+
+	nodes.close()
+
+
+
+def write_nx_edges(N, directory, file_name):
+	"""Write the edges of a networkx.DiGraph() object to a .txt file.
+	
+	Args:
+		N (networkx.DiGraph()): the networkx.DiGraph() object to write
+		directory (str): The directory in which to save the file
+		file_name (str): the name of the file
+	
+	Returns:
+		None
+	"""
+	col_names = set([])
+	for e in N.edges_iter():
+		col_names = col_names.union(N.edge[e[0]][e[1]].keys())
+
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+
+	edges = open(directory + '/' + file_name, 'w')
+
+	edges.write('source' + '\t' + 'target')
+	for col in col_names:
+		if col == 'source' or col == 'target':
+			pass
+		else: 
+			edges.write('\t' + col)
+
+	for e in N.edges_iter():
+		edges.write('\n' + str(e[0]) + '\t' + str(e[1]))
+		for col in col_names:
+			if col == 'source' or col == 'target':
+				pass
+			else:
+				try:
+					edges.write('\t' + str(N.edge[e[0]][e[1]][col]))
+				except KeyError:
+					edges.write('\tNone')
+
+	edges.close()
+
+
+
+def read_multi(nodes_file_name = '2_multiplex/mx_nodes.txt', edges_file_name = '2_multiplex/mx_edges.txt', sep = '\t', nid = 'id', eidfrom = 'source', eidto = 'target'):
+	"""A convenience function for easily reading in pipeline's multiplex. 
+	
+	Returns:
+		multiplex.multiplex(): the pipeline's multiplex from make_multiplex.py
+	"""
+	multi = multiplex_from_txt(nodes_file_name = nodes_file_name,
+									   edges_file_name = edges_file_name,
+									   sep = sep,
+									   nid = nid,
+									   eidfrom = eidfrom,
+									   eidto = eidto)
+	return multi
+
+def multiplex_from_txt(**kwargs):
+	"""Convenience function to quickly read a multiplex object from a pair of node and edge files. 
+	
+	Args:
+		**kwargs: kwargs passed down to utility.graph_from_txt()
+	
+	Returns:
+		multiplex.multiplex(): a multiplex object with appropriate attributes, etc. 
+	"""
+	G = graph_from_txt(**kwargs)
+	
+
+	cap = {(e[0], e[1]) : float(G.edge[e[0]][e[1]]['capacity']) for e in G.edges_iter()} # huh, what is this doing here? 
+	nx.set_edge_attributes(G, 'capacity', cap)
+
+	multi = multiplex()
+	multi.add_graph(G)
+
+	return multi

@@ -50,18 +50,9 @@ def igraph_2_nx(ig_graph):
 
 	return nx_graph
 
-def edges_2_df(N, col_names = ['layer']):
-    if col_names == None:
-        col_names = set([])
-        for e in N.edges_iter():
-            col_names = col_names.union(N.edge[e[0]][e[1]].keys())
-    d = {}
-    for col in col_names:
-        attr = nx.get_edge_attributes(N, col)
-        attr = [attr[e] if e in attr.keys() else None for e in N.edges_iter()]
-        d[col] = attr
-    return pd.DataFrame(d)
-
+def edges_2_df(G, attrs):
+	attrdict = {attr : [G.edge[e[0]][e[1]][attr] or None for e in G.edges_iter()] for attr in attrs}
+	return pd.DataFrame(attrdict)
 
 def nodes_2_df(G, attrs):
     attrs = attrs + ['id']
