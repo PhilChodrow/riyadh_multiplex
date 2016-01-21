@@ -31,6 +31,7 @@ multi.scale_edge_attribute(layer = 'metro', attribute = 'free_flow_time_m', beta
 multi.read_od(layer = 'taz', key = 'taz', od_file = '1_data/taz_od/0_1.txt', sep = " ")
 
 betas = [100, 10, 1, .9, .8, .7, .6, .5, .4, .3, .2, .1, .01]
+
 for beta in betas:
 
   if beta in [100, 1, .5, .1, .01]:
@@ -47,7 +48,7 @@ for beta in betas:
                 summary = summary, # change this to get route tables 
                 attrname = 'congested_time_m_' + str(beta),
                 flow_name = 'flow_' +str(beta),
-                P = [.1]*10,
+                P = [.2, .2, .2, .2, .1, .1],
                 scale = .25)
 
   if df is not None:
