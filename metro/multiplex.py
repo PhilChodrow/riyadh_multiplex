@@ -372,6 +372,26 @@ class multiplex:
 		attrs = attrs + ['layer']
 		return edges_2_df(self.layers_as_subgraph(layers), attrs)
 
+	def route_summary(self, n_nodes = None, cost = 'congested_time_m', layer = 'streets', funs = None):
+		g, od = self.to_igraph()
+		'''
+		Iterates over shortest paths. 
+		
+		Example funs: 
+		funs = {'dist' : lambda e : e['dist_km'],
+		        'free_flow_time' : lambda e : e['free_flow_time_m'],
+		        'weighted_demand' : lambda e : e['flow_100'] * e['dist_km'],
+		        'weighted_capacity' : lambda e : e['capacity'] * e['dist_km']}
+		'''
+		g, od = self.to_igraph()
+		if n_nodes is not None:
+			sub_od = {key : od[key] for key in od.keys()[:n_nodes]}
+			return igraph_route_summary(g, sub_od, cost, layer, funs)
+		else:
+			return igraph_route_summary(g, od, cost, layer, funs)
+
+
+
 
 # Helper FUNCTIONS ------
 # --------------------------------------------------------------------------------------------------------------
@@ -413,3 +433,25 @@ def multiplex_from_txt(**kwargs):
 	multi.add_graph(G)
 
 	return multi
+
+def igraph_route_summary(g, od, cost, layer, funs):
+
+    summary = []
+    es = g.es
+    
+    def entries(o, d, path, funs):
+        labs = {'o' : o, 'd' : d} 
+        metrics = {lab : sum([funs[lab](es[e]) for e in path if es[e]['layer'] == layer]) for lab in funs}
+        labs.update(metrics)
+        return labs
+    
+    for o in od:
+        ds = od[o]
+        if len(ds) > 0:
+            targets = ds.keys()
+            paths = g.get_shortest_paths(o, to=targets, weights=cost, mode='OUT', output='epath')
+            update = [entries(o, targets[i], paths[i], funs) for i in range(len(targets))]
+            summary += update
+            
+    return pd.DataFrame(summary)
+    
