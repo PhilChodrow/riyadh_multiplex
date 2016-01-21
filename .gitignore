@@ -10,4 +10,7 @@
 *.spyderworkspace
 4_figs/*
 3_throughput/*
-2_multiplex/* 
+2_multiplex/*
+venv/
+.ipynb_checkpoints/
+1_data/ 
