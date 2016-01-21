@@ -8,7 +8,7 @@
 *.pyc
 *.ipynn_checkpoints/git
 *.spyderworkspace
-4_figs/*
+
 3_throughput/*
 2_multiplex/*
 venv/
