@@ -373,7 +373,6 @@ class multiplex:
 		return edges_2_df(self.layers_as_subgraph(layers), attrs)
 
 	def route_summary(self, n_nodes = None, cost = 'congested_time_m', layer = 'streets', funs = None):
-		g, od = self.to_igraph()
 		'''
 		Iterates over shortest paths. 
 		
@@ -386,12 +385,16 @@ class multiplex:
 		g, od = self.to_igraph()
 		if n_nodes is not None:
 			sub_od = {key : od[key] for key in od.keys()[:n_nodes]}
-			return igraph_route_summary(g, sub_od, cost, layer, funs)
+			df = igraph_route_summary(g, sub_od, cost, layer, funs)
+
 		else:
-			return igraph_route_summary(g, od, cost, layer, funs)
+			df = igraph_route_summary(g, od, cost, layer, funs)
 
+		def get_flow(row):
+			return od[row['o']][row['d']]
 
-
+		df['flow'] = df.apply(get_flow, axis = 1)
+		return df
 
 # Helper FUNCTIONS ------
 # --------------------------------------------------------------------------------------------------------------
