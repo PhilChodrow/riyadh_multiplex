@@ -208,12 +208,15 @@ class multiplex:
 		Summary: 
 			Add edges to between ALL nodes of layer1 and the nodes of layer2 spatially nearest to the nodes of layer1. New edges are labelled 'layer1_layer2_T' and 'layer1_layer2_T' is added to self.layers.  Requires that each node in each G have a 'pos' tuple of format (latitude, longitude). 
 		
-		args: 
+		Args: 
 			layer1 (str): base layer, all nodes joined to one node in layer2
 			layer2 (str): layer to which layer1 will be joined
 			transfer_speed (float): assumed speed at which transfer distance can be traversed, e.g. walking speed from street to metro. 
 			base_cost (float): base cost associated with transfer, e.g. mean time spent waiting for metro.
-			both (bool): if true, transfer is bidirectional.   		
+			both (bool): if true, transfer is bidirectional. 
+
+		Returns:
+			None  		
 		Example: spatial_join(layer1 = 'metro', layer2 = 'street')
 		'''	
 		def find_nearest(n, N1, N2):
@@ -255,18 +258,26 @@ class multiplex:
                     
 	def layers_as_subgraph(self, layers):
 		'''
-		return a subset of the layers of self.G as a networkx.DiGraph() object. 
+		Summary:
+			return a subset of the layers of self.G as a networkx.DiGraph() object. 
 		args: 
-			layers -- (list) a list of layers to return
+			layers (list): a list of layers to return
+
+		Returns:
+			None
 		'''
 		return self.G.subgraph([n for n,attrdict in self.G.node.items() if attrdict['layer'] in layers])
 
 	def sub_multiplex(self, sublayers):
 		'''
-		return a subset of the layers of self.G as a multiplex() object. 
+		Summary:
+			Return a subset of the layers of self.G as a multiplex() object. 
 		
-		args:
-			sublayers -- (list) a list of layers, all of which must be elements of self.layers
+		Args:
+			sublayers (list): a list of layers, all of which must be elements of self.layers
+
+		Returns:
+			None
 		
 		'''
 		sub_multiplex = multiplex()        
@@ -276,15 +287,27 @@ class multiplex:
 
 	def as_graph(self):
 		'''
-		Return self.multiplex as a networkx.DiGraph() object. 
+		Summary: 
+			Return self.multiplex as a networkx.DiGraph() object. 
+
+		Args:
+			None
+
+		Returns:
+			None
 		'''
 		return self.G
 
 	def update_node_attributes(self, attr):
 		'''
-		set the attributes of self.G.node
-		args:
-			attr -- (dict) a dict with nodenames as keys. Values are attribute dicts. 
+		Summary:
+			Set the attributes of self.G.node
+		
+		Args:
+			attr (dict): a dict with nodenames as keys. Values are attribute dicts. 
+
+		Returns:
+			None
 		'''
 
 		for n in attr:
@@ -292,16 +315,29 @@ class multiplex:
 
 	def update_edge_attributes(self, attr):
 		'''
-		set the attributes of self.G.edge
-		args:
-			attr -- (dict) a dict with edgenames (or node 2-tuples) as keys. Values are attribute dicts. 
+		Summary: 
+			Set the attributes of self.G.edge
+
+		Args:
+			attr (dict): a dict with edgenames (or node 2-tuples) as keys. Values are attribute dicts. 
+
+		Returns:
+			None
 		'''
 		for e in attr:
 			for att in attr[e]: self.G.edge[e[0]][e[1]] = attr[e][att]
 
 	def summary(self):
 		'''
-		view a summary of self, printed to the terminal
+		Summary: 
+			View a summary of self, printed to the terminal
+
+		Args: 
+			None
+
+		Returns:
+			None
+
 		'''
 		layers = {layer: (len([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer]), 
 						  len([(u,v,d) for u,v,d in self.G.edges(data=True) if d['layer'] == layer])) for layer in self.layers} 
@@ -318,50 +354,55 @@ class multiplex:
 
 	def to_txt(self, directory, file_name):
 		'''
-		save the multiplex to a pair of .txt documents for later processing. 
+		Summary:
+			Save self to node and edge text files for further processing. 
 		
-		args: 
-			directory -- (str) the directory in which to save the file_name
-			file_name -- (str) the file prefix, will have '_nodes.txt' and _edges.txt' suffixed. 
+		Args: 
+			directory (str): the directory in which to save the file_name
+			file_name (str): the file prefix, will have '_nodes.txt' and _edges.txt' suffixed. 
+
+		Returns:
+			None
 		'''
 		write_nx_nodes(self.G, directory, file_name + '_nodes.txt')
 		write_nx_edges(self.G, directory, file_name + '_edges.txt')
 
 	def update_layers(self):
-		'''
-		Check that layers includes all values of 'layer' attributes in self.G
-		'''
+		"""
+		Summary:
+			Check that the layers of self include all layers present in self.G
+
+		Args:
+			None
+		
+		Returns:
+		    None 
+		"""
 		new_layers = set([attrdict['layer'] for n, attrdict in self.G.node.items()])
 		new_layers.update(set([d['layer'] for u,v,d in self.G.edges(data=True)]))
 		self.layers = list(new_layers)
 
 	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
 		"""
-		multiply specified edge attributes by a specified constant
+		Summary:
+			Multiply specified edge attributes by a specified constant
+		
 		Args:
 		    layer (str, optional): the layer to scale
-		    attribute (TYPE, optional): attribute to scale
+		    attribute (str, optional): attribute to scale
 		    beta (int, optional): constant by which to scale attribute
+
+		Returns:
+			None
 		"""
 		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.layers_as_subgraph([layer]).edges_iter()}
 		nx.set_edge_attributes(self.G, attribute, d)
 
-	def layers_of_path(self, nbunch = []):
-		"""retrieve the layers included in a given set of nodes. 
-		[probably slow due to repeated queries to G, a cached version might be faster]
-		
-		Args:
-		    nbunch (list, optional): a list of node ids
-		
-		Returns:
-		    list: a list of layers assocated with the specified node ids
-		"""
-		layers_found = set([self.G.node[n]['layer'] for n in nbunch])
-		
-		return layers_found
-
-	def mean_edge_attr_per(self, layers = [], attr = 'weight', weight_attr = None):
-		"""compute the optionally weighted mean of a specified edge attribute 
+	
+	def mean_edge_attr_per(self, layers = self.layers, attr = 'dist_km', weight_attr = None):
+		""" 
+		Summary:
+			Compute the (optionally weighted) mean of a specified edge attribute over a specified set of layers
 		
 		Args:
 		    layers (list, optional): the layers across which to compute the average
@@ -369,7 +410,7 @@ class multiplex:
 		    weight_attr (str, optional): the numeric attribute to use as weights 
 		
 		Returns:
-		    None
+		    The weighted average of attr over the specified layer set. 
 		"""
 		H = self.layers_as_subgraph(layers = layers)
 		attr_array = np.array([H.edge[e[0]][e[1]][attr] for e in H.edges_iter()])
@@ -379,20 +420,54 @@ class multiplex:
 		else: 
 			weight_array = np.array([1 for e in H.edges_iter()])
 
-		return np.dot(attr_array.T, weight_array) / (weight_array).sum()
+		return np.average(attr_array, weights = weight_array)
 
 	def nodes_2_df(self, layers, attrs):
+		"""
+		Summary:
+			Create a pandas.DataFrame in which each row is a node and each column a node attribute, for a specified set of layers. 
+		
+		Args:
+		    layers (list): a list of strings giving the layers to include in the returned df.  
+		    attrs (list): a list of strings giving the node attributes to include as columns in the returned df .
+		
+		Returns:
+		    pandas.DataFrame: a df in which each row is a node and each specified column is a node attribute.  
+		"""
 		attrs = attrs + ['layer']
 		return nodes_2_df(self.layers_as_subgraph(layers), attrs)
 
 	def to_igraph(self):
+		"""
+		Summary: 
+			Retrieve self.G and self.od in igraph form. 
+		
+		Returns:
+		    igraph.Graph: an igraph-formatted copy of G for use in computationally-intensive operations. 
+		    od_ig: a copy of self.od keyed to the returned igraph graph. 
+		"""
 		g = nx_2_igraph(self.G)
 		d = {v['name'] : v.index for v in g.vs}
 		od_ig = re_key_od(self.od, d)
 		return g, od_ig
 
 	def run_ita(self, n_nodes = None, summary = False, base_cost = 'free_flow_time_m', attrname = 'congested_time_m', flow_name = 'flow', P = [.4, .3, .2, .1], scale = 1):
-
+		"""
+		Summary: 
+			Run Iterated Traffic Assignment on self.G, using self.od as the OD matrix. 
+		
+		Args:
+		    n_nodes (TYPE, optional): the number of nodes on which to run analysis; only n_nodes = None should be used for publication. 
+		    summary (bool, optional): whether to construct a route-by-route summary of key metrics. EXTREMELY EXPENSIVE in time and memory. 
+		    base_cost (str, optional): the cost to use as the base in ITA. 
+		    attrname (str, optional): the name of the new edge attribute to reflect congested travel time
+		    flow_name (str, optional): the name of the new edge attribute to reflect congested flow. 
+		    P (list, optional): the iteration levels to use. 
+		    scale (int, optional): the fraction of flow to assign. 
+		
+		Returns:
+		    pd.DataFrame: if summary = True, return a df with route-by-route metrics. Otherwise None.  
+		"""
 		g, od = self.to_igraph()
 		if n_nodes is not None:
 			sub_od = {key : od[key] for key in od.keys()[:n_nodes]}
@@ -412,18 +487,39 @@ class multiplex:
 		return df
 
 	def edges_2_df(self, layers, attrs):
+		"""
+		Summary: 
+			Create a pandas.DataFrame in which each row is an edge and each column an edge attribute. 
+		
+		Args:
+		    layers (list): a list of strings indicating the layers to be included in the df 
+		    attrs (list): a list of attributes to include as columns
+		
+		Returns:
+		    pandas.DataFrame: a df in which each row is an edge and each column is an edge attribute.  
+		"""
 		attrs = attrs + ['layer']
 		return edges_2_df(self.layers_as_subgraph(layers), attrs)
 
 	def route_summary(self, n_nodes = None, cost = 'congested_time_m', layer = 'streets', funs = None):
 		'''
-		Iterates over shortest paths. 
+		Summary: 
+			Compute route-wise metrics over shortest paths using flexibly-defined functions. 
+
+		Args:
+		    n_nodes (int, optional): the number of nodes over which to compute -- only n_nodes = None should be used for final analysis. 
+		    cost (str, optional): edge cost for computing shortest paths. 
+		    layer (str, optional): the layer over which to compute. 
+		    funs (dict, optional): a dict in which the keys are column names and the values are functions applied to each edge. Each function should retrieve a scalar value from an igraph edge instance. Example:
+
+			funs = {'dist' : lambda e : e['dist_km'],
+			        'free_flow_time' : lambda e : e['free_flow_time_m'],
+			        'weighted_demand' : lambda e : e['flow_100'] * e['dist_km'],
+			        'weighted_capacity' : lambda e : e['capacity'] * e['dist_km']}
+
+		Returns:
+			A pandas.DataFrame with the routes, flows, and summarised metrics.  
 		
-		Example funs: 
-		funs = {'dist' : lambda e : e['dist_km'],
-		        'free_flow_time' : lambda e : e['free_flow_time_m'],
-		        'weighted_demand' : lambda e : e['flow_100'] * e['dist_km'],
-		        'weighted_capacity' : lambda e : e['capacity'] * e['dist_km']}
 		'''
 		g, od = self.to_igraph()
 		if n_nodes is not None:
@@ -440,6 +536,18 @@ class multiplex:
 		return df
 
 	def path_lengths(self, n_nodes, weight, mode = 'array'):
+		"""
+		Summary:
+			Compute shortest path lengths under a given weight. 
+		
+		Args:
+		    n_nodes (int): the number of nodes for which to compute; only n_nodes = None should be used for final analysis.  
+		    weight (str): the edge attribute to use as cost for shortest paths.  
+		    mode (str, optional): the mode in which to return the results; see analysis.path_lengths_igraph() for options. 
+		
+		Returns:
+		    TYPE: 
+		"""
 		g, od = self.to_igraph()
 		nodes = np.array([v.index for v in g.vs if g.vs[v.index]['layer'] == 'streets'])
 		if n_nodes is not None:
@@ -452,6 +560,17 @@ class multiplex:
 # --------------------------------------------------------------------------------------------------------------
 
 def re_key_od(od, key_map):
+	"""
+	Summary:
+		Re-key an od matrix according to a mapping from old keys to new ones. 
+	
+	Args:
+	    od (dict): a dict of dicts giving ods 
+	    key_map (dict): a dict in which keys are old labels and values are new labels. 
+	
+	Returns:
+	    (dict): the re-keyed od matrix. 
+	"""
 	new_od = {key_map[o] : {key_map[d] : od[o][d] for d in od[o]} for o in od}
 	return new_od
 
@@ -490,7 +609,25 @@ def multiplex_from_txt(**kwargs):
 	return multi
 
 def igraph_route_summary(g, od, cost, layer, funs):
+    """
+    Summary:
+    	Compute a flexible summary of route information over shortest paths. 
+    
+    Args:
+        g (igraph.Graph): the graph over which to compute shortest paths
+        od (dict): a dict of dicts containing OD information keyed to nodes of g
+        cost (str): the edge attribute to use as cost for shortest paths
+        layer (str): the layer in which the edge attributes are to be computed
+        funs (dict): a dict in which the keys are column names and the values are functions applied to each edge. Each function should retrieve a scalar value from an igraph edge instance. Example:
 
+			funs = {'dist' : lambda e : e['dist_km'],
+			        'free_flow_time' : lambda e : e['free_flow_time_m'],
+			        'weighted_demand' : lambda e : e['flow_100'] * e['dist_km'],
+			        'weighted_capacity' : lambda e : e['capacity'] * e['dist_km']}
+    
+    Returns:
+        pd.DataFrame: a data frame including columns for origin, destination, and specified metrics.  
+    """
     summary = []
     es = g.es
     
