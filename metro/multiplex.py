@@ -336,7 +336,7 @@ class multiplex:
 		else: 
 			weight_array = np.array([1 for e in H.edges_iter()])
 
-		return np.dot(attr_array.T, weight_array) / (weight_array**2).sum()
+		return np.dot(attr_array.T, weight_array) / (weight_array).sum()
 
 	def nodes_2_df(self, layers, attrs):
 		attrs = attrs + ['layer']
