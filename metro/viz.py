@@ -153,8 +153,8 @@ def flow_plot(multi, flow_attr, ax):
               arrows = False,
               ax = ax)
 
-def weighted_hist(ax, measure, weights, label, standardized = False, **kwargs):
-    n = 100
+def weighted_hist(ax, measure, weights, label, standardized = False, n = 100, **kwargs):
+    
     if standardized:
         mu, sigma = analysis.weighted_avg_and_std(measure, weights)
         hist_data = 1.0 * (measure - mu) / sigma
