@@ -41,7 +41,20 @@ class multiplex:
 				self.label_nodes()
 		
 	def read_od(self, layer, key, od_file, sep, **kwargs):
-
+		"""
+		Summary:
+			Read an OD matrix formatted with columns 'o', 'd', and 'flow', where 'o' and 'd' match a node attribute in a layer of self. 
+		
+		Args:
+		    layer (str): the layer of nodes whose attributes match the 'o' and 'd' columns
+		    key (str): the node attribute matching the 'o' and 'd' columns
+		    od_file (str): the path of the OD matrix to read in
+		    sep (str): The separator used in the OD file
+		    **kwargs: Additional arguments passed to pd.read_table
+		
+		Returns:
+		    None
+		"""
 		from itertools import product
 		
 
@@ -90,27 +103,41 @@ class multiplex:
 		self.od = od
 
 	def re_key_od(self, key_map):
+		"""
+		Re-key the OD matrix according to a user-supplied mapping of keys. 
+		
+		Args:
+		    key_map (dict): a dictionary with the old keys as keys and the new keys as values.  
+		
+		Returns:
+		    None
+		"""
 		self.od = re_key_od(self.od, key_map)
 
 		
 
 	def add_epsilon(self, weight, epsilon):
 		'''
-		Add a small positive number to a numeric attribute of self.G.edges()
-		args:
-			weight  -- (str) the numeric attribute to increment
-			epsilon -- (float) the amount by which to increment, typically very small.  
-		
-		Use case: some edges have zero cost_time_m, but the betweenness
-		algorithm used requires nonzero weights. 
+		Summary:
+			Add a small positive number epsilon to an edge attribute. 
+		Args:
+		    weight (TYPE): The edge attribute to modify
+		    epsilon (TYPE): The number to add to each attribute
 		'''
 		d = {e : float(self.G.edge[e[0]][e[1]][weight] or 0) + epsilon for e in self.G.edges_iter()}
 		nx.set_edge_attributes(self.G, weight, d)
 
 	def label_nodes(self, old_label = 'old_label'):
-		'''
-		Relabel the nodes in the format layer_int, e.g. 'streets_214'. 
-		'''
+		"""
+		Summary:
+			Generate new labels for the nodes of the multiplex. 
+		
+		Args:
+		    old_label (str, optional): Name of attribute under which to save the old labels
+		
+		Returns:
+		    None 
+		"""
 		self.G = nx.convert_node_labels_to_integers(self.G, label_attribute = old_label)
 		new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) for n in self.G.node} 
 		self.G = nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
@@ -120,11 +147,16 @@ class multiplex:
 			self.re_key_od(key_map)
 
 	def add_graph(self, H):
-		'''
-		Add a single graph to self.G and update layers. 
-		args:
-			H -- a networkx.DiGraph() object whose nodes and edges all have a 'layer' attribute. 
-		'''
+		"""
+		Summary: 
+			Add a graph H to the multiplex and update labels. 
+		
+		Args:
+		    H (networkx.DiGraph): The graph to add 
+		
+		Returns:
+		    None
+		"""
 		self.G = nx.disjoint_union(self.G, H)
 		self.update_layers()
 		self.label_nodes('id')
@@ -134,17 +166,25 @@ class multiplex:
 	# 	nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
 
 	def get_layers(self):
-		'''Return the current layer list.'''
+		"""
+		Summary: Get a list of layers currently included in the multiplex. 
+		
+		Returns:
+		    list: a list of layers  
+		"""
 		return self.layers
 		
 	def remove_layer(self, layer):
-		'''
-		Delete a layer from the multiplex. All nodes and edges in that layer are
-		removed.
-		args: 
-			layer -- (str) the name of an element of self.layers
-		 
-		'''
+		"""
+		Summary:
+			Delete a layer of the multiplex. All nodes in that layer are deleted, as well as any edges that begin or end at a deleted node. 
+		
+		Args:
+		    layer (str): the layer to remove 
+		
+		Returns:
+		    None
+		"""
 		if layer not in self.layers:
 			print "Sorry, " + layer + ' is not current in the multiplex.'
 		else:
@@ -152,25 +192,28 @@ class multiplex:
 			self.G.remove_nodes_from([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer])
 
 	def check_layer(self, layer_name):
-		'''
-		Check to see if G contains layer_name as a layer.
-		args: 
-			layer_name -- (str) the layer to check
-		'''
+		"""
+		Summary: Check for the presence of a layer in the multiplex. 
+		
+		Args:
+		    layer_name (str): the name of the layer to check for.  
+		
+		Returns:
+		    bool: True iff layer_name is the name of a layer in the multiplex.  
+		"""
 		return layer_name in self.layers 
 	
 	def spatial_join(self, layer1, layer2, transfer_speed, base_cost, capacity, both = True):
 		'''
-		Add edges to between ALL nodes of layer1 and the nodes of layer2 spatially nearest to the nodes of layer1. 
-		New edges are labelled 'layer1_layer2_T' and 'layer1_layer2_T' is added to self.layers.  
-		Requires that each node in each G have a 'pos' tuple of format (latitude, longitude). 
+		Summary: 
+			Add edges to between ALL nodes of layer1 and the nodes of layer2 spatially nearest to the nodes of layer1. New edges are labelled 'layer1_layer2_T' and 'layer1_layer2_T' is added to self.layers.  Requires that each node in each G have a 'pos' tuple of format (latitude, longitude). 
 		
 		args: 
-			layer1         -- (str) base layer, all nodes joined to one node in layer2
-			layer2         -- (str) layer to which layer1 will be joined
-			transfer_speed -- (float) assumed speed at which transfer distance can be traversed, e.g. walking speed from street to metro. 
-			base_cost      -- (float) base cost associated with transfer, e.g. mean time spent waiting for metro.
-			both           -- (bool) if true, transfer is bidirectional.   		
+			layer1 (str): base layer, all nodes joined to one node in layer2
+			layer2 (str): layer to which layer1 will be joined
+			transfer_speed (float): assumed speed at which transfer distance can be traversed, e.g. walking speed from street to metro. 
+			base_cost (float): base cost associated with transfer, e.g. mean time spent waiting for metro.
+			both (bool): if true, transfer is bidirectional.   		
 		Example: spatial_join(layer1 = 'metro', layer2 = 'street')
 		'''	
 		def find_nearest(n, N1, N2):
@@ -395,6 +438,15 @@ class multiplex:
 
 		df['flow'] = df.apply(get_flow, axis = 1)
 		return df
+
+	def path_lengths(self, n_nodes, weight, mode = 'array'):
+		g, od = self.to_igraph()
+		nodes = np.array([v.index for v in g.vs if g.vs[v.index]['layer'] == 'streets'])
+		if n_nodes is not None:
+			nodes = np.random.choice(nodes, size = n_nodes, replace = False) 
+		lengths = analysis.path_lengths_igraph(g, nodes, weight, mode)
+		lengths = lengths[~np.isinf(lengths)]
+		return lengths
 
 # Helper FUNCTIONS ------
 # --------------------------------------------------------------------------------------------------------------
