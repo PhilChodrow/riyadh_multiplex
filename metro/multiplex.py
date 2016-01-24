@@ -399,7 +399,7 @@ class multiplex:
 		nx.set_edge_attributes(self.G, attribute, d)
 
 	
-	def mean_edge_attr_per(self, layers = self.layers, attr = 'dist_km', weight_attr = None):
+	def mean_edge_attr_per(self, layers = [], attr = 'dist_km', weight_attr = None):
 		""" 
 		Summary:
 			Compute the (optionally weighted) mean of a specified edge attribute over a specified set of layers
