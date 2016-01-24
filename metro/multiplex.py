@@ -16,11 +16,16 @@ class multiplex:
 		self.layers -- (list) list of strings
 		self.G -- a networkx.DiGraph object, all of whose nodes and edges have a 
 		'layer' attribute.  
+		self.od -- a dict of dicts ....
 	'''
 	def __init__(self):
 		self.layers = []
 		self.G = nx.DiGraph()
 		self.od = None
+
+	# -------------------------------------------------------------------------
+	# NETWORK CONSTRUCTION	
+	# -------------------------------------------------------------------------
 
 	def add_layers(self, layer_dict):
 		'''
@@ -39,7 +44,47 @@ class multiplex:
 				nx.set_edge_attributes(layer_dict[layer], 'layer', layer)
 				self.G = nx.disjoint_union(self.G, layer_dict[layer])
 				self.label_nodes()
+	def label_nodes(self, old_label = 'old_label'):
+		"""
+		Summary:
+			Generate new labels for the nodes of the multiplex. 
 		
+		Args:
+		    old_label (str, optional): Name of attribute under which to save the old labels
+		
+		Returns:
+		    None 
+		"""
+		self.G = nx.convert_node_labels_to_integers(self.G, 
+		                                            label_attribute = old_label)
+		new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) 
+					  for n in self.G.node} 
+
+		self.G = nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
+
+		if self.od is not None:
+			key_map = {self.G.node[n][old_label] : n for n in self.G}
+			self.re_key_od(key_map)
+
+	def add_graph(self, H):
+		"""
+		Summary: 
+			Add a graph H to the multiplex and update labels. 
+		
+		Args:
+		    H (networkx.DiGraph): The graph to add 
+		
+		Returns:
+		    None
+		"""
+		self.G = nx.disjoint_union(self.G, H)
+		self.update_layers()
+		self.label_nodes('id')
+
+	# -------------------------------------------------------------------------
+	# OD CONSTRUCTION
+	# -------------------------------------------------------------------------
+
 	def read_od(self, layer, key, od_file, sep, **kwargs):
 		"""
 		Summary:
@@ -115,6 +160,9 @@ class multiplex:
 		self.od = re_key_od(self.od, key_map)
 
 		
+	# -------------------------------------------------------------------------
+	# NETWORK MANIPULATION	
+	# -------------------------------------------------------------------------
 
 	def add_epsilon(self, weight, epsilon):
 		'''
@@ -127,53 +175,6 @@ class multiplex:
 		d = {e : float(self.G.edge[e[0]][e[1]][weight] or 0) + epsilon for e in self.G.edges_iter()}
 		nx.set_edge_attributes(self.G, weight, d)
 
-	def label_nodes(self, old_label = 'old_label'):
-		"""
-		Summary:
-			Generate new labels for the nodes of the multiplex. 
-		
-		Args:
-		    old_label (str, optional): Name of attribute under which to save the old labels
-		
-		Returns:
-		    None 
-		"""
-		self.G = nx.convert_node_labels_to_integers(self.G, label_attribute = old_label)
-		new_labels = {n : self.G.node[n]['layer'] + '_' + str(n) for n in self.G.node} 
-		self.G = nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
-
-		if self.od is not None:
-			key_map = {self.G.node[n][old_label] : n for n in self.G}
-			self.re_key_od(key_map)
-
-	def add_graph(self, H):
-		"""
-		Summary: 
-			Add a graph H to the multiplex and update labels. 
-		
-		Args:
-		    H (networkx.DiGraph): The graph to add 
-		
-		Returns:
-		    None
-		"""
-		self.G = nx.disjoint_union(self.G, H)
-		self.update_layers()
-		self.label_nodes('id')
-		
-	# def set_node_labels(self, label):
-	# 	new_labels = {n : self.G.node[n][label] for n in self.G.node}
-	# 	nx.relabel_nodes(self.G, mapping = new_labels, copy = False)
-
-	def get_layers(self):
-		"""
-		Summary: Get a list of layers currently included in the multiplex. 
-		
-		Returns:
-		    list: a list of layers  
-		"""
-		return self.layers
-		
 	def remove_layer(self, layer):
 		"""
 		Summary:
@@ -190,18 +191,6 @@ class multiplex:
 		else:
 			self.layers.remove(layer)
 			self.G.remove_nodes_from([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer])
-
-	def check_layer(self, layer_name):
-		"""
-		Summary: Check for the presence of a layer in the multiplex. 
-		
-		Args:
-		    layer_name (str): the name of the layer to check for.  
-		
-		Returns:
-		    bool: True iff layer_name is the name of a layer in the multiplex.  
-		"""
-		return layer_name in self.layers 
 	
 	def spatial_join(self, layer1, layer2, transfer_speed, base_cost, capacity, both = True):
 		'''
@@ -255,49 +244,7 @@ class multiplex:
 			edges_added += 1
 
 		print 'Added ' + str(edges_added) + ' ' + bidirectional + 'transfers between '  + layer1 + ' and ' + layer2 + '.'
-                    
-	def layers_as_subgraph(self, layers):
-		'''
-		Summary:
-			return a subset of the layers of self.G as a networkx.DiGraph() object. 
-		args: 
-			layers (list): a list of layers to return
-
-		Returns:
-			None
-		'''
-		return self.G.subgraph([n for n,attrdict in self.G.node.items() if attrdict['layer'] in layers])
-
-	def sub_multiplex(self, sublayers):
-		'''
-		Summary:
-			Return a subset of the layers of self.G as a multiplex() object. 
-		
-		Args:
-			sublayers (list): a list of layers, all of which must be elements of self.layers
-
-		Returns:
-			None
-		
-		'''
-		sub_multiplex = multiplex()        
-		sublayer_dict = {layer : self.layer_as_subgraph(layer) for layer in sublayers}
-		sub_multiplex.add_layers(sublayer_dict)
-		return sub_multiplex
-
-	def as_graph(self):
-		'''
-		Summary: 
-			Return self.multiplex as a networkx.DiGraph() object. 
-
-		Args:
-			None
-
-		Returns:
-			None
-		'''
-		return self.G
-
+	
 	def update_node_attributes(self, attr):
 		'''
 		Summary:
@@ -326,6 +273,113 @@ class multiplex:
 		'''
 		for e in attr:
 			for att in attr[e]: self.G.edge[e[0]][e[1]] = attr[e][att]
+	
+	def update_layers(self):
+		"""
+		Summary:
+			Check that the layers of self include all layers present in self.G
+
+		Args:
+			None
+		
+		Returns:
+		    None 
+		"""
+		new_layers = set([attrdict['layer'] 
+		                 for n, attrdict in self.G.node.items()])
+		new_layers.update(set([d['layer'] 
+		                  for u,v,d in self.G.edges(data=True)]))
+
+		self.layers = list(new_layers)
+
+	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
+		"""
+		Summary:
+			Multiply specified edge attributes by a specified constant
+		
+		Args:
+		    layer (str, optional): the layer to scale
+		    attribute (str, optional): attribute to scale
+		    beta (int, optional): constant by which to scale attribute
+
+		Returns:
+			None
+		"""
+		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta 
+		     for e in self.layers_as_subgraph([layer]).edges_iter()}
+		nx.set_edge_attributes(self.G, attribute, d)
+	
+	# -------------------------------------------------------------------------
+	# NETWORK QUERIES	
+	# -------------------------------------------------------------------------
+
+	def get_layers(self):
+		"""
+		Summary: Get a list of layers currently included in the multiplex. 
+		
+		Returns:
+		    list: a list of layers  
+		"""
+		return self.layers
+		
+
+	def check_layer(self, layer_name):
+		"""
+		Summary: Check for the presence of a layer in the multiplex. 
+		
+		Args:
+		    layer_name (str): the name of the layer to check for.  
+		
+		Returns:
+		    bool: True iff layer_name is the name of a layer in the multiplex.  
+		"""
+		return layer_name in self.layers 
+	
+                    
+	def layers_as_subgraph(self, layers):
+		'''
+		Summary:
+			return a subset of the layers of self.G as a networkx.DiGraph() object. 
+		args: 
+			layers (list): a list of layers to return
+
+		Returns:
+			None
+		'''
+		return self.G.subgraph([n for n,attrdict in self.G.node.items() 
+		                       if attrdict['layer'] in layers])
+
+	def sub_multiplex(self, sublayers):
+		'''
+		Summary:
+			Return a subset of the layers of self.G as a multiplex() object. 
+		
+		Args:
+			sublayers (list): a list of layers, all of which must be elements of self.layers
+
+		Returns:
+			None
+		
+		'''
+		sub_multiplex = multiplex()        
+		sublayer_dict = {layer : self.layer_as_subgraph(layer) 
+						 for layer in sublayers}
+		sub_multiplex.add_layers(sublayer_dict)
+		return sub_multiplex
+
+	def as_graph(self):
+		'''
+		Summary: 
+			Return self.multiplex as a networkx.DiGraph() object. 
+
+		Args:
+			None
+
+		Returns:
+			None
+		'''
+		return self.G
+
 
 	def summary(self):
 		'''
@@ -339,8 +393,10 @@ class multiplex:
 			None
 
 		'''
-		layers = {layer: (len([n for n,attrdict in self.G.node.items() if attrdict['layer'] == layer]), 
-						  len([(u,v,d) for u,v,d in self.G.edges(data=True) if d['layer'] == layer])) for layer in self.layers} 
+		layers = {layer: (len([n for n,attrdict in self.G.node.items() 
+		                  if attrdict['layer'] == layer]), 
+						  len([(u,v,d) for u,v,d in self.G.edges(data=True) 
+						      if d['layer'] == layer])) for layer in self.layers} 
 		
 		if self.od is not None:
 			print 'OD: loaded\n'
@@ -366,61 +422,6 @@ class multiplex:
 		'''
 		write_nx_nodes(self.G, directory, file_name + '_nodes.txt')
 		write_nx_edges(self.G, directory, file_name + '_edges.txt')
-
-	def update_layers(self):
-		"""
-		Summary:
-			Check that the layers of self include all layers present in self.G
-
-		Args:
-			None
-		
-		Returns:
-		    None 
-		"""
-		new_layers = set([attrdict['layer'] for n, attrdict in self.G.node.items()])
-		new_layers.update(set([d['layer'] for u,v,d in self.G.edges(data=True)]))
-		self.layers = list(new_layers)
-
-	def scale_edge_attribute(self, layer = None, attribute = None, beta = 1):
-		"""
-		Summary:
-			Multiply specified edge attributes by a specified constant
-		
-		Args:
-		    layer (str, optional): the layer to scale
-		    attribute (str, optional): attribute to scale
-		    beta (int, optional): constant by which to scale attribute
-
-		Returns:
-			None
-		"""
-		d = {e: self.G.edge[e[0]][e[1]][attribute] * beta for e in self.layers_as_subgraph([layer]).edges_iter()}
-		nx.set_edge_attributes(self.G, attribute, d)
-
-	
-	def mean_edge_attr_per(self, layers = [], attr = 'dist_km', weight_attr = None):
-		""" 
-		Summary:
-			Compute the (optionally weighted) mean of a specified edge attribute over a specified set of layers
-		
-		Args:
-		    layers (list, optional): the layers across which to compute the average
-		    attr (str, optional): the numeric attribute of which to compute the mean 
-		    weight_attr (str, optional): the numeric attribute to use as weights 
-		
-		Returns:
-		    The weighted average of attr over the specified layer set. 
-		"""
-		H = self.layers_as_subgraph(layers = layers)
-		attr_array = np.array([H.edge[e[0]][e[1]][attr] for e in H.edges_iter()])
-
-		if weight_attr is not None: 
-			weight_array = np.array([H.edge[e[0]][e[1]][weight_attr] for e in H.edges_iter()])
-		else: 
-			weight_array = np.array([1 for e in H.edges_iter()])
-
-		return np.average(attr_array, weights = weight_array)
 
 	def nodes_2_df(self, layers, attrs):
 		"""
@@ -450,6 +451,49 @@ class multiplex:
 		d = {v['name'] : v.index for v in g.vs}
 		od_ig = re_key_od(self.od, d)
 		return g, od_ig
+		
+	def edges_2_df(self, layers, attrs):
+		"""
+		Summary: 
+			Create a pandas.DataFrame in which each row is an edge and each column an edge attribute. 
+		
+		Args:
+		    layers (list): a list of strings indicating the layers to be included in the df 
+		    attrs (list): a list of attributes to include as columns
+		
+		Returns:
+		    pandas.DataFrame: a df in which each row is an edge and each column is an edge attribute.  
+		"""
+		attrs = attrs + ['layer']
+		return edges_2_df(self.layers_as_subgraph(layers), attrs)
+	# -------------------------------------------------------------------------
+	# ANALYSIS
+	# -------------------------------------------------------------------------
+	
+	def mean_edge_attr_per(self, layers = [], attr = 'dist_km', weight_attr = None):
+		""" 
+		Summary:
+			Compute the (optionally weighted) mean of a specified edge attribute over a specified set of layers
+		
+		Args:
+		    layers (list, optional): the layers across which to compute the average
+		    attr (str, optional): the numeric attribute of which to compute the mean 
+		    weight_attr (str, optional): the numeric attribute to use as weights 
+		
+		Returns:
+		    The weighted average of attr over the specified layer set. 
+		"""
+		H = self.layers_as_subgraph(layers = layers)
+		attr_array = np.array([H.edge[e[0]][e[1]][attr] for e in H.edges_iter()])
+
+		if weight_attr is not None: 
+			weight_array = np.array([H.edge[e[0]][e[1]][weight_attr] 
+			                        for e in H.edges_iter()])
+		else: 
+			weight_array = np.array([1 for e in H.edges_iter()])
+
+		return np.average(attr_array, weights = weight_array)
+
 
 	def run_ita(self, n_nodes = None, summary = False, base_cost = 'free_flow_time_m', attrname = 'congested_time_m', flow_name = 'flow', P = [.4, .3, .2, .1], scale = 1):
 		"""
@@ -486,20 +530,6 @@ class multiplex:
 
 		return df
 
-	def edges_2_df(self, layers, attrs):
-		"""
-		Summary: 
-			Create a pandas.DataFrame in which each row is an edge and each column an edge attribute. 
-		
-		Args:
-		    layers (list): a list of strings indicating the layers to be included in the df 
-		    attrs (list): a list of attributes to include as columns
-		
-		Returns:
-		    pandas.DataFrame: a df in which each row is an edge and each column is an edge attribute.  
-		"""
-		attrs = attrs + ['layer']
-		return edges_2_df(self.layers_as_subgraph(layers), attrs)
 
 	def route_summary(self, n_nodes = None, cost = 'congested_time_m', layer = 'streets', funs = None):
 		'''
@@ -549,15 +579,20 @@ class multiplex:
 		    TYPE: 
 		"""
 		g, od = self.to_igraph()
-		nodes = np.array([v.index for v in g.vs if g.vs[v.index]['layer'] == 'streets'])
+		nodes = np.array([v.index for v in g.vs 
+		                 if g.vs[v.index]['layer'] == 'streets'])
+
 		if n_nodes is not None:
 			nodes = np.random.choice(nodes, size = n_nodes, replace = False) 
 		lengths = analysis.path_lengths_igraph(g, nodes, weight, mode)
 		lengths = lengths[~np.isinf(lengths)]
 		return lengths
 
-# Helper FUNCTIONS ------
-# --------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# HELPER FUNCTIONS
+# -----------------------------------------------------------------------------
+
 
 def re_key_od(od, key_map):
 	"""
@@ -600,7 +635,8 @@ def multiplex_from_txt(**kwargs):
 	G = graph_from_txt(**kwargs)
 	
 
-	cap = {(e[0], e[1]) : float(G.edge[e[0]][e[1]]['capacity']) for e in G.edges_iter()} # huh, what is this doing here? 
+	cap = {(e[0], e[1]) : float(G.edge[e[0]][e[1]]['capacity']) 
+	        for e in G.edges_iter()} 
 	nx.set_edge_attributes(G, 'capacity', cap)
 
 	multi = multiplex()
@@ -633,7 +669,9 @@ def igraph_route_summary(g, od, cost, layer, funs):
     
     def entries(o, d, path, funs):
         labs = {'o' : o, 'd' : d} 
-        metrics = {lab : sum([funs[lab](es[e]) for e in path if es[e]['layer'] == layer]) for lab in funs}
+        metrics = {lab : sum([funs[lab](es[e]) 
+                             for e in path if es[e]['layer'] == layer]) 
+        		   for lab in funs}
         labs.update(metrics)
         return labs
     
@@ -641,8 +679,13 @@ def igraph_route_summary(g, od, cost, layer, funs):
         ds = od[o]
         if len(ds) > 0:
             targets = ds.keys()
-            paths = g.get_shortest_paths(o, to=targets, weights=cost, mode='OUT', output='epath')
-            update = [entries(o, targets[i], paths[i], funs) for i in range(len(targets))]
+            paths = g.get_shortest_paths(o, 
+                                         to=targets, 
+                                         weights=cost, 
+                                         mode='OUT', 
+                                         output='epath')
+            update = [entries(o, targets[i], paths[i], funs) 
+            		  for i in range(len(targets))]
             summary += update
             
     return pd.DataFrame(summary)

@@ -4,6 +4,11 @@ import igraph as ig
 import pandas as pd
 import os
 
+
+# -----------------------------------------------------------------------------
+# INPUT/OUTPUT FUNCTIONS 
+# -----------------------------------------------------------------------------
+
 def check_directory(directory):
 	"""check for the existence of a directory and add if it's not there. 
 	
@@ -137,6 +142,9 @@ def write_nx_edges(N, directory, file_name):
 
 
 
+# -----------------------------------------------------------------------------
+# NETWORK CONVERSIONS
+# -----------------------------------------------------------------------------
 
 def nx_2_igraph(graph):
 	"""convert a networkx.DiGraph() object into an igraph.Graph() object. 
@@ -218,6 +226,10 @@ def nodes_2_df(G, attrs):
     attrdict = {attr : [G.node[n][attr] or None for n in G.node] 
     			for attr in attrs}
     return pd.DataFrame(attrdict)
+
+# -----------------------------------------------------------------------------
+# NETWORK OPERATIONS
+# -----------------------------------------------------------------------------
 
 def rename_node_attribute(N, old, new):
 	""" rename a node attribute in a networkx.DiGraph() object. 

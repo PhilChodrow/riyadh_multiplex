@@ -4,59 +4,31 @@ import numpy as np
 import matplotlib.cm as cm
 from metro import utility
 import networkx as nx
-# from shapely.geometry import MultiPolygon, Point, shape
-# from descartes import PolygonPatch
+from shapely.geometry import MultiPolygon, Point, shape
+from descartes import PolygonPatch
 from matplotlib.collections import PatchCollection
 from matplotlib import colors
 from metro import analysis
 
-def spatial_plot(G, attr, ax, title = 'plot!', layer = 'taz'):
-	import scipy.ndimage as ndimage
-
-	cols = ['layer', 'lon', 'lat', attr]
-	df = utility.nodes_2_df(G, cols)
-
-	df = df[np.isnan(df[attr]) == False]
-
-	n = 2000
-	grid_x, grid_y = np.mgrid[df.lon.min():df.lon.max():n * 1j, 
-					  df.lat.min():df.lat.max():n * 1j]
-	zj = np.zeros(grid_x.shape)
-	
-	lonmax = df.lon.max()
-	lonmin = df.lon.min()
-	latmax = df.lat.max()
-	latmin = df.lat.min()
-
-	df = df[df['layer'] == layer]
-
-
-	for i in df.index:
-		x = int((df.loc[i]['lon'] - lonmin) / (lonmax - lonmin)*n) - 1
-		y = int((df.loc[i]['lat'] - latmin) / (latmax - latmin)*n) - 1 
-		zj[x][y] += df.loc[i][attr]
-		
-	zi = ndimage.gaussian_filter(zj, sigma=12.0, order=0)
-
-	ax.contourf(grid_x, grid_y, zi, 100, linewidths=0.1, cmap=plt.get_cmap('afmhot'), alpha = 1, vmax = 1./1. * zi.max())
-	
-	G.position = {n : (G.node[n]['lon'], G.node[n]['lat']) for n in G}
-	nx.draw(G, G.position,
-			edge_color = 'white', 
-			edge_size = 0.01,
-			node_color = 'white',
-			node_size = 0,
-			alpha = .15,
-			with_labels = False,
-			arrows = False)
-	plt.title(title)
-
-
 def bubble_plot(G, size, color, size_factor = 1, **kwargs):
-	G.position = {n : (G.node[n]['lon'], G.node[n]['lat']) for n in G}
+  """
+  Summary:
+    Plot a networkx.DiGraph() in which the nodes have both size and some scalar feature reflected by color
+  
+  Args:
+      G (networkx.DiGraph()): the graph to map 
+      size (str): the node attribute of G to be mapped to size 
+      color (str): the node attribute of G to be mapped to color
+      size_factor (int, optional): size scaling factor for manual tuning 
+      **kwargs: additional args to nx.draw
+  
+  Returns:
+      None
+  """
+  
 	G.size = [G.node[n][size]*size_factor for n in G.node]
 	G.color = [G.node[n][color] for n in G.node]
-	n = nx.draw(G, G.position,
+	n = nx.draw(G, get_coords(G),
 		edge_color = 'grey', 
 		edge_size = 0.01,
 		node_color = G.color,
@@ -66,62 +38,46 @@ def bubble_plot(G, size, color, size_factor = 1, **kwargs):
 		arrows = False,
 		**kwargs)
 
-def choropleth(tracts, d, key_field, **kwargs):
-    norm = colors.Normalize(vmin = 0, vmax = 1)
-    cmap = plt.get_cmap(kwargs['cmap'])
-    cols = cm.ScalarMappable(norm = norm, cmap = cmap)
-    
-    patches = []
-
-    for tract in tracts:
-        try:
-        	interval = kwargs['vmax'] - kwargs['vmin']
-        	colorval = max(d[tract['properties'][key_field]], kwargs['vmin'])
-        	colorval = min(colorval, kwargs['vmax'])
-        	colorval = (colorval - kwargs['vmin']) / interval
-        	# colorval = 1-colorval
-        	color = cols.to_rgba(colorval)
-        	
-        	# print cols(colorval), cols(1-colorval)
-        except KeyError:
-        	try: 
-        		colorval = 1.0 * kwargs['default_val'] / kwargs['vmax']
-        		# print colorval
-        		color = cols.to_rgba(colorval)
-        	except KeyError:
-	        	try: 
-	        		color = kwargs['default_color']
-	        	except KeyError:
-	        		color = (1,1,1,0)
-        poly = MultiPolygon([shape(tract['geometry'])])
-        for idx, p in enumerate(poly):
-        	patches.append(PolygonPatch(p, fc = color, ec='#555555', lw=.0, alpha=1, zorder=0))
-
-    xlim = kwargs['xlim']
-    ylim = kwargs['ylim']
-
-    # fig = plt.figure(figsize = (10,10), dpi = 300)
-    # ax = fig.add_subplot(111)
-
-    ax = kwargs['ax']
-
-    ax.add_collection(PatchCollection(patches, match_original=True))
-    ax.set(xlim = xlim, ylim = ylim, xticks = [], yticks = [])
-    sns.despine(top = True, left = True, right = True, bottom = True)
-    
-    if kwargs['colorbar']:
-	    m = cm.ScalarMappable(cmap=cols)
-	    m.set_array([kwargs['vmin'], kwargs['vmax']])
-	    plt.colorbar(m,	ax = ax)
-
-
 def get_coords(G):
+    """
+    Summary:
+      Extract the coordinates of the nodes of G as lon-lat pairs
+    
+    Args:
+        G (networkx.DiGraph()): the network from which to retrieve coordinates. Must contain 'lon' and 'lat' attributes.  
+    
+    Returns:
+        dict: keyed by node of G, values are tuples of the form (lon, lat)  
+    """
     return {n : (G.node[n]['lon'], G.node[n]['lat']) for n in G}
 
 def get_edge_scalar(G, attr):
+    """
+    Summary: 
+      Retrieve a scalar attribute from the edges of G
+    
+    Args:
+        G (networkx.DiGraph()): the network from which retrieve the attributes 
+        attr (str): the attribute to extract
+    
+    Returns:
+        array: an np.array of edge attributes. 
+    """
     return np.array([G.edge[e[0]][e[1]][attr] for e in G.edges_iter()])
 
 def flow_plot(multi, flow_attr, ax):
+    """
+    Summary:
+      Convenience function for plotting flows on the street and metro networks. 
+    
+    Args:
+        multi (multiplex.multiplex): a multiplex object containing a metro layer and a streets layer.  
+        flow_attr (str): the name of the edge attribute containing edge flows
+        ax (ax): the matplotlib.axis on which to plot  
+    
+    Returns:
+        None: 
+    """
     G = multi.layers_as_subgraph(['streets'])
     nx.draw_networkx_edges(G, 
                            get_coords(G),
@@ -154,7 +110,22 @@ def flow_plot(multi, flow_attr, ax):
               ax = ax)
 
 def weighted_hist(ax, measure, weights, label, standardized = False, n = 100, **kwargs):
+    """
+    Summary:
+      Plot a weighted histogram of one measure, weighted by another
     
+    Args:
+        ax (matplotlib.axis): the axis on which to plot 
+        measure (np.array): the measure to plot
+        weights (np.array): the weights with respect to which to plot the measure, must be same shape as measure 
+        label (str): the label of the plot 
+        standardized (bool, optional): if True, standardize the histogram
+        n (int, optional): the number of bins with which to plot the histogram 
+        **kwargs: additional keyword arguments passed to ax.plot()
+    
+    Returns:
+        None 
+    """
     if standardized:
         mu, sigma = analysis.weighted_avg_and_std(measure, weights)
         hist_data = 1.0 * (measure - mu) / sigma
