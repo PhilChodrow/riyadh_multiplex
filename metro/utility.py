@@ -187,12 +187,36 @@ def igraph_2_nx(ig_graph):
 	return nx_graph
 
 def edges_2_df(G, attrs):
-	attrdict = {attr : [G.edge[e[0]][e[1]][attr] or None for e in G.edges_iter()] for attr in attrs}
+	"""
+	Summary:
+		Construct a pandas.DataFrame where each row is an edge of G and each column is an edge attribute. 
+	
+	Args:
+	    G (networkx.DiGraph()): the graph to query 
+	    attrs (list): a list of strings giving the attributes included as columns of G 
+	
+	Returns:
+	    pandas.DataFrame(): a data frame where each row is an edge of G and each column is an edge attribute. 
+	"""
+	attrdict = {attr : [G.edge[e[0]][e[1]][attr] or None for e in G.edges_iter()] 
+				for attr in attrs}
 	return pd.DataFrame(attrdict)
 
 def nodes_2_df(G, attrs):
+    """
+    Summary:
+    	Construct a pandas.DataFrame where each row is a node of G and each column is a node attribute. 
+    
+    Args:
+        G (TYPE): 
+        attrs (TYPE): 
+    
+    Returns:
+        pandas.DataFrame(): a data frame where each row is a node of G and each column is an edge attribute. 
+    """
     attrs = attrs
-    attrdict = {attr : [G.node[n][attr] or None for n in G.node] for attr in attrs}
+    attrdict = {attr : [G.node[n][attr] or None for n in G.node] 
+    			for attr in attrs}
     return pd.DataFrame(attrdict)
 
 def rename_node_attribute(N, old, new):
@@ -247,26 +271,53 @@ def spatial_multiplex_join(N1, N2, TRANSFER_SPEED):
 
 	for n in N1_sub.node:
 		nearest, nearest_dist = find_nearest(n, N1_sub, N2_sub)
-		multiplex.add_edge(n, nearest, {'dist_km' : nearest_dist, 'mode' : 'transfer', 'cost_time_m' : nearest_dist / TRANSFER_SPEED, 'weight' : nearest_dist / TRANSFER_SPEED})
-		multiplex.add_edge(nearest, n, {'dist_km' : nearest_dist, 'mode' : 'transfer', 'cost_time_m' : nearest_dist / TRANSFER_SPEED, 'weight' : nearest_dist / TRANSFER_SPEED})
+		multiplex.add_edge(n, 
+		                   nearest, 
+		                   {'dist_km' : nearest_dist, 
+		                   'mode' : 'transfer', 
+		                   'cost_time_m' : nearest_dist / TRANSFER_SPEED, 
+		                   'weight' : nearest_dist / TRANSFER_SPEED})
+		multiplex.add_edge(nearest, 
+		                   n, 
+		                   {'dist_km' : nearest_dist, 
+		                   'mode' : 'transfer', 
+		                   'cost_time_m' : nearest_dist / TRANSFER_SPEED, 
+		                   'weight' : nearest_dist / TRANSFER_SPEED})
 		
 		print 'Added transfer between ' + str(n) + ' and ' + str(nearest) + ' of length ' + str(round(nearest_dist, 2)) + 'km.'
 
 	return multiplex
 
 def del_edge_attribute(N, a):
+	"""
+	Summary: 
+		Remove an edge attribute of the network N
+	
+	Args:
+	    N (networkx.DiGraph()): the network from which to remove the edge attribute 
+	    a (str): the attribute to delete 
+	
+	Returns:
+	    None 
+	"""
 	for e in N.edges_iter():
 		attr = N[e[0]][e[1]]
 		if a in attr:
 			del attr[a]
 
 def del_node_attribute(N,a):
+	"""
+	Summary:
+		Remove a node attribute from the network N
+	
+	Args:
+	    N (networkx.DiGraph()): the network from which to remove the node attribute
+	    a (str): the attribute to delete
+	
+	Returns:
+	    None 
+	"""
 	for n in N.nodes_iter():
 		attr = N.node[n]
 		if a in attr:
 			del attr[a]
-
-def scale_edge_attribute_igraph(g, layer, attr, beta = 1):
-    original = g.es.select(lambda v: v['layer'] == layer)[attr]
-    scaled = [beta * v for v in original]
-    g.es.select(lambda v: v['layer'] == layer)[attr] = scaled
