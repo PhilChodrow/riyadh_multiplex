@@ -93,7 +93,11 @@ def spatial_outreach(multi, node_layer = 'taz', thru_layers = ['streets'], weigh
 		None
 	'''
 	from shapely.geometry import MultiPoint
+	from math import pi
 	
+	LAT_DIST = 110766.95237186992 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
+	LON_DIST = 101274.42720366278 / 1000.0 # in km. See http://www.csgnetwork.com/degreelenllavcalc.html
+
 	def distance_matrix(nodes, weight):
 		N = len(nodes)
 
@@ -115,12 +119,12 @@ def spatial_outreach(multi, node_layer = 'taz', thru_layers = ['streets'], weigh
 		
 	g = utility.nx_2_igraph(multi.layers_as_subgraph(thru_layers + [node_layer]))
 	nodes = g.vs.select(lambda vertex: vertex['layer'] == node_layer)['name']
-	pos = {v['name'] : (v['lon'], v['lat']) 
+	pos = {v['name'] : (v['lon'] * LON_DIST, v['lat'] * LAT_DIST) 
 		   for v in g.vs.select(lambda v: v['name'] in nodes)}
 	
 	d = distance_matrix(nodes, weight)
 	
-	outreach = {n : sqrt(area(n, cost, d)) for n in nodes}
+	outreach = {n : sqrt(area(n, cost, d)) / pi for n in nodes}
 	nx.set_node_attributes(multi.G, attrname, outreach)
 
 def proximity_to(multi, layers, to_layer):
@@ -155,16 +159,16 @@ def accessible_nodes(self, origin, weight, limit):
 	Returns:
 		dict: a dictionary of shortest path lengths (in the given weight) indexed by the destination node
 	'''
-		q = [ (0, origin, None) ]
-		seen = {}
-		while q:
-			dist, current, parent = heappop(q)
-			if dist > limit: break
-			seen[current] = dist
-			for nextNode, edge in self.G[current].items():
-				if nextNode in seen: continue
-				heappush(q, (dist + edge[weight], nextNode, current) )  
-		return seen
+	q = [ (0, origin, None) ]
+	seen = {}
+	while q:
+		dist, current, parent = heappop(q)
+		if dist > limit: break
+		seen[current] = dist
+		for nextNode, edge in self.G[current].items():
+			if nextNode in seen: continue
+			heappush(q, (dist + edge[weight], nextNode, current) )  
+	return seen
 
 def path_lengths_igraph(g, nodes, weight, mode = 'array'):
 	'''

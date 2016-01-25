@@ -225,6 +225,7 @@ def nodes_2_df(G, attrs):
     attrs = attrs
     attrdict = {attr : [G.node[n][attr] or None for n in G.node] 
     			for attr in attrs}
+    attrdict.update({ 'label' : [n for n in G.node]})
     return pd.DataFrame(attrdict)
 
 # -----------------------------------------------------------------------------

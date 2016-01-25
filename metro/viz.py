@@ -11,32 +11,31 @@ from matplotlib import colors
 from metro import analysis
 
 def bubble_plot(G, size, color, size_factor = 1, **kwargs):
-  """
-  Summary:
-    Plot a networkx.DiGraph() in which the nodes have both size and some scalar feature reflected by color
-  
-  Args:
-      G (networkx.DiGraph()): the graph to map 
-      size (str): the node attribute of G to be mapped to size 
-      color (str): the node attribute of G to be mapped to color
-      size_factor (int, optional): size scaling factor for manual tuning 
-      **kwargs: additional args to nx.draw
-  
+    '''
+    Summary:
+      Plot a networkx.DiGraph() in which the nodes have both size and some scalar feature reflected by color
+    
+    Args:
+        G (networkx.DiGraph()): the graph to map 
+        size (str): the node attribute of G to be mapped to size 
+        color (str): the node attribute of G to be mapped to color
+        size_factor (int, optional): size scaling factor for manual tuning 
+        **kwargs: additional args to nx.draw
+
   Returns:
       None
-  """
-  
-	G.size = [G.node[n][size]*size_factor for n in G.node]
-	G.color = [G.node[n][color] for n in G.node]
-	n = nx.draw(G, get_coords(G),
-		edge_color = 'grey', 
-		edge_size = 0.01,
-		node_color = G.color,
-		node_size = G.size,
-		linewidth = 0,
-		with_labels = False,
-		arrows = False,
-		**kwargs)
+    '''
+    G.size = [G.node[n][size]*size_factor for n in G.node]
+    G.color = [G.node[n][color] for n in G.node]
+    nx.draw(G, get_coords(G),
+        edge_color = 'grey', 
+        edge_size = 0.01,
+        node_color = G.color,
+        node_size = G.size,
+        linewidth = 0,
+        with_labels = False,
+        arrows = False,
+        **kwargs)
 
 def get_coords(G):
     """
@@ -94,7 +93,7 @@ def flow_plot(multi, flow_attr, ax):
                            arrows = False,
                            edge_cmap = plt.get_cmap('plasma'),
                            edge_vmin = 0, 
-                           edge_vmax = 1.5,
+                           edge_vmax = 1.25,
                            ax = ax)
 
     if multi.check_layer('metro'):
