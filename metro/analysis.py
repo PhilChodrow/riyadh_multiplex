@@ -124,7 +124,7 @@ def spatial_outreach(multi, node_layer = 'taz', thru_layers = ['streets'], weigh
 	
 	d = distance_matrix(nodes, weight)
 	
-	outreach = {n : sqrt(area(n, cost, d)) / pi for n in nodes}
+	outreach = {n : sqrt(area(n, cost, d)/pi) for n in nodes}
 	nx.set_node_attributes(multi.G, attrname, outreach)
 
 def proximity_to(multi, layers, to_layer):
