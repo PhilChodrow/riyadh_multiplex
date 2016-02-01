@@ -64,7 +64,7 @@ def get_edge_scalar(G, attr):
     """
     return np.array([G.edge[e[0]][e[1]][attr] for e in G.edges_iter()])
 
-def flow_plot(multi, flow_attr, ax):
+def flow_plot(multi, flow_attr, ax, background = True):
     """
     Summary:
       Convenience function for plotting flows on the street and metro networks. 
@@ -78,13 +78,15 @@ def flow_plot(multi, flow_attr, ax):
         None: 
     """
     G = multi.layers_as_subgraph(['streets'])
-    nx.draw_networkx_edges(G, 
-                           get_coords(G),
-                           edge_color = 'grey',
-                           width = 1,
-                           arrows = False,
-                           alpha = .2,
-                           ax = ax)
+
+    if background:
+      nx.draw_networkx_edges(G, 
+                             get_coords(G),
+                             edge_color = 'grey',
+                             width = 1,
+                             arrows = False,
+                             alpha = .2,
+                             ax = ax)
 
     nx.draw_networkx_edges(G, 
                            get_coords(G),
@@ -103,7 +105,7 @@ def flow_plot(multi, flow_attr, ax):
               width = get_edge_scalar(G, flow_attr) * .0003,
               node_color = 'white',
               node_size = 0,
-              alpha = .4,
+              alpha = .2,
               with_labels = False,
               arrows = False,
               ax = ax)

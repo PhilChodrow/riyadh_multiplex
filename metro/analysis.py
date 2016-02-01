@@ -297,3 +297,23 @@ def construct_tract_getter(tracts, id_field):
             if p.within(tract):
                 return tract_dict[tract]
     return get_tract
+
+    def edge_wise_cor(multi, attr1, attr2, weight):
+	    """
+	    Summary:
+	    	Compute the weighted edge-wise correlation coefficient of two scalar edge attributes. 
+	    
+	    Args:
+	        multi (multiplex.multiplex): the multiplex on which to compute
+	        attr1 (str): the first attribute 
+	        attr2 (str): the second attribute
+	        weight (str): the attribute by which to weight
+	    
+	    Returns:
+	        float: the correlation between attr1 and attr2, weighted by weight.  
+	    """
+	    df = multi.edges_2_df(['streets'], [attr1, attr2, weight])
+	    for attr in [attr1, attr2]:
+	        df[attr + '_weighted'] = df[attr] * df[weight] 
+	    df = df.dropna(thresh = 5)
+	    return np.corrcoef(df[attr1 + '_weighted'], df[attr2 + '_weighted'])[0][1]
