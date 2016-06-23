@@ -8,10 +8,11 @@ _mx = 2_multiplex/mx_nodes.txt 2_multiplex/mx_edges.txt
 
 _mx_flows = 3_throughput/mx_flow_nodes.txt 3_throughput/mx_flow_edges.txt
 
-_shortest = 3_throughput/shortest_uniform_time_m.csv 3_throughput/shortest_congested_time_m_100.csv 3_throughput/shortest_free_flow_time_m.csv 3_throughput/shortest_dist_km.csv
+_sim = 3_throughput/tareted_0.1.csv uniform_0.1.csv 
+
 
 # high-level interface --------------------------------------------------------
-all: $(_mx_flows) $(_shortest)
+all: $(_mx_flows) $(_sim)
 
 clean:
 	@rm -f $(_mx)
@@ -22,7 +23,7 @@ clean:
 mx: $(mx)
 unscaled: $(_unscaled)
 mx_flows: $(_mx_flows)
-shortest: $(_shortest)
+sim: $(_sim)
 
 # dependency logic ------------------------------------------------------------
 
@@ -38,6 +39,6 @@ $(_mx_flows): $(_mx) assign_flows.py
 	@echo assigning flows -- this could take a while
 	@python assign_flows.py
 
-$(_shortest): $(_mx_flows) weighted_shortest_paths.py
+$(_sim): 3_throughput/route_info_0.1.csv weighted_shortest_paths.py
 	@echo computing weighted shortest weighted_shortest_paths
 	@python weighted_shortest_paths.py
