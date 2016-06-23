@@ -27,9 +27,10 @@ def bubble_plot(G, size, color, size_factor = 1, **kwargs):
     '''
     G.size = [G.node[n][size]*size_factor for n in G.node]
     G.color = [G.node[n][color] for n in G.node]
-    nx.draw(G, get_coords(G),
-        edge_color = 'grey', 
-        edge_size = 0.01,
+    nx.draw_networkx(G, get_coords(G),
+        edge_color = 'white', 
+        edge_size = 0.001,
+        width = 0.1,
         node_color = G.color,
         node_size = G.size,
         linewidth = 0,
@@ -64,7 +65,7 @@ def get_edge_scalar(G, attr):
     """
     return np.array([G.edge[e[0]][e[1]][attr] for e in G.edges_iter()])
 
-def flow_plot(multi, flow_attr, ax, background = True):
+def flow_plot(multi, flow_attr, ax, cmap = 'viridis', background = True, scale = .0005, **kwargs):
     """
     Summary:
       Convenience function for plotting flows on the street and metro networks. 
@@ -77,35 +78,68 @@ def flow_plot(multi, flow_attr, ax, background = True):
     Returns:
         None: 
     """
+    from collections import Counter
+
     G = multi.layers_as_subgraph(['streets'])
+    
+    # Set flow
+    one_way = nx.get_edge_attributes(G, flow_attr)
+    other_way = {(e[1], e[0]) : one_way[e] for e in one_way}
+
+    one_way = Counter(one_way)
+    other_way = Counter(other_way)
+
+    total_flow = one_way + other_way
+
+    # Set capacity
+
+    one_way = nx.get_edge_attributes(G, 'capacity')
+    other_way = {(e[1], e[0]) : one_way[e] for e in one_way}
+
+    one_way = Counter(one_way)
+    other_way = Counter(other_way)
+
+    total_capacity = one_way + other_way
+
+    H = G.to_undirected()
+    nx.set_edge_attributes(H, flow_attr, total_flow)
+    nx.set_edge_attributes(H, 'capacity', total_capacity)
 
     if background:
-      nx.draw_networkx_edges(G, 
-                             get_coords(G),
+      nx.draw_networkx_edges(H, 
+                             get_coords(H),
                              edge_color = 'grey',
                              width = 1,
                              arrows = False,
                              alpha = .2,
                              ax = ax)
 
-    nx.draw_networkx_edges(G, 
-                           get_coords(G),
-                           edge_color = get_edge_scalar(G, flow_attr)/get_edge_scalar(G, 'capacity'),
-                           width = get_edge_scalar(G, flow_attr) * .0003,
+    nx.draw_networkx_edges(H, 
+                           get_coords(H),
+                           edge_color = get_edge_scalar(H, flow_attr)/get_edge_scalar(H, 'capacity'),
+                           width = get_edge_scalar(H, flow_attr) * scale,
                            arrows = False,
-                           edge_cmap = plt.get_cmap('plasma'),
-                           edge_vmin = 0, 
-                           edge_vmax = 1.25,
-                           ax = ax)
+                           edge_cmap = plt.get_cmap(cmap),
+                           ax = ax,
+                           **kwargs)
 
     if multi.check_layer('metro'):
       G = multi.layers_as_subgraph(['metro'])
-      nx.draw_networkx_edges(G, get_coords(G),
+      one_way = nx.get_edge_attributes(G, flow_attr)
+      other_way = {(e[1], e[0]) : one_way[e] for e in one_way}
+
+      one_way = Counter(one_way)
+      other_way = Counter(other_way)
+
+      total = one_way + other_way
+      H = G.to_undirected()
+      nx.set_edge_attributes(H, flow_attr, total)
+      nx.draw_networkx_edges(H, get_coords(H),
               edge_color = 'white', 
-              width = get_edge_scalar(G, flow_attr) * .0003,
+              width = get_edge_scalar(H, flow_attr) * scale,
               node_color = 'white',
               node_size = 0,
-              alpha = .2,
+              alpha = .4,
               with_labels = False,
               arrows = False,
               ax = ax)
