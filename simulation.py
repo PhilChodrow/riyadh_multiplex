@@ -114,7 +114,7 @@ def main():
 	print 'Metro now runs at mean speed of street layer'
 
 	# run
-	betas = pd.read_csv('betas.csv').beta
+	
 	for beta in betas:
 			m.scale_edge_attribute(layer = 'metro',
 									   attribute = 'free_flow_time_m',
