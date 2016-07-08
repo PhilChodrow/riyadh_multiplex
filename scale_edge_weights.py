@@ -24,7 +24,7 @@ def main():
 				  if multi.G.edge[e[0]][e[1]]['layer'] == 'streets'])
 		print weight + ': ' + str(round(x.mean(),2))
 
-	io.multiplex_to_txt(multi, '2_multiplex/', 'mx')
+	multi.to_txt('2_multiplex/', 'mx')
 
 if __name__ == '__main__':
 	main()

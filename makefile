@@ -39,6 +39,6 @@ $(_mx_flows): $(_mx) assign_flows.py
 	@echo assigning flows -- this could take a while
 	@python assign_flows.py
 
-$(_sim): 3_throughput/route_info_0.1.csv weighted_shortest_paths.py
-	@echo computing weighted shortest weighted_shortest_paths
-	@python weighted_shortest_paths.py
+$(_sim): 3_throughput/route_info_0.1.csv simulation.py
+	@echo Running simulation of targeted and uniform removal scenarios
+	@python simulation.py
